@@ -1,16 +1,13 @@
 import './App.css';
 
 import {useEffect, useRef, useState} from 'react';
-// import WebcamFeed from './WebcamFeed'; // To be created
-// import Controls from './Controls'; // To be created
+
+import Controls from './Controls'; // Import the new Controls component
+import DebugInfo from './DebugInfo'; // Import the DebugInfo component
 // import DebugInfo from './DebugInfo'; // To be created
 
-interface MediaDeviceInfoExtended extends MediaDeviceInfo {
-  id: string;
-}
-
 function App() {
-  const [devices, setDevices] = useState<MediaDeviceInfoExtended[]>([]);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(
     undefined,
   );
@@ -19,6 +16,56 @@ function App() {
   const [showDebugInfo, setShowDebugInfo] = useState<boolean>(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const [videoResolution, setVideoResolution] = useState<{
+    height: number | undefined;
+    width: number | undefined;
+  }>({height: undefined, width: undefined});
+  const controlsTimeoutRef = useRef<number | null>(null);
+
+  const HIDE_CONTROLS_DELAY = 3000; // 3 seconds
+
+  // Function to show controls and reset hide timer
+  const showControlsAndResetTimer = () => {
+    setControlsVisible(true);
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    controlsTimeoutRef.current = window.setTimeout(() => {
+      setControlsVisible(false);
+    }, HIDE_CONTROLS_DELAY);
+  };
+
+  useEffect(() => {
+    // Initial call to show controls and start timer
+    showControlsAndResetTimer();
+
+    // Event listeners for activity on the app container
+    const appContainer = document.getElementById('app-main-container'); // Assuming app-container has this ID or use a ref
+    if (appContainer) {
+      appContainer.addEventListener('mousemove', showControlsAndResetTimer);
+      appContainer.addEventListener('mousedown', showControlsAndResetTimer);
+    }
+    // Listen for keydown on window as it might not be focused on appContainer
+    window.addEventListener('keydown', showControlsAndResetTimer);
+
+    return () => {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+      if (appContainer) {
+        appContainer.removeEventListener(
+          'mousemove',
+          showControlsAndResetTimer,
+        );
+        appContainer.removeEventListener(
+          'mousedown',
+          showControlsAndResetTimer,
+        );
+      }
+      window.removeEventListener('keydown', showControlsAndResetTimer);
+    };
+  }, []); // Run only on mount and unmount
 
   // Get available media devices
   useEffect(() => {
@@ -29,7 +76,7 @@ function App() {
         const allDevices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = allDevices.filter(
           (device) => device.kind === 'videoinput',
-        ) as MediaDeviceInfoExtended[];
+        );
         setDevices(videoDevices);
         if (videoDevices.length > 0 && !selectedDeviceId) {
           if (videoDevices[0]?.deviceId) {
@@ -60,7 +107,6 @@ function App() {
       const getMedia = async () => {
         try {
           const newStream = await navigator.mediaDevices.getUserMedia({
-            audio: false,
             video: {deviceId: {exact: selectedDeviceId}}, // No audio needed
           });
           setStream(newStream);
@@ -90,95 +136,103 @@ function App() {
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
+      // Listen for loadedmetadata to get initial video dimensions
+      const handleLoadedMetadata = () => {
+        if (videoRef.current) {
+          setVideoResolution({
+            height: videoRef.current.videoHeight,
+            width: videoRef.current.videoWidth,
+          });
+        }
+      };
+      videoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+      // Optional: Listen for resize events on the video element if its display size can change
+      // and you want to track that separately from the intrinsic video resolution.
+      // For intrinsic resolution, loadedmetadata is usually enough.
+
+      return () => {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        videoRef.current?.removeEventListener(
+          'loadedmetadata',
+          handleLoadedMetadata,
+        );
+      };
     }
   }, [stream]);
 
   if (error && devices.length === 0) {
     return (
       <div className="app-error">
-        Error: {error} Please ensure you have a camera connected and granted
-        permissions.
+        Error: {error} Please ensure you have a camera connected and permissions
+        are granted.
       </div>
     );
   }
 
+  // TODO: Implement actual components for these
+  const handleDeviceChange = (deviceId: string) =>
+    setSelectedDeviceId(deviceId);
+  const handleFlipToggle = () => setIsFlipped(!isFlipped);
+  const handleFillModeToggle = () =>
+    setFillMode(fillMode === 'cover' ? 'contain' : 'cover');
+  const handleFullscreen = () => {
+    if (videoRef.current?.parentElement) {
+      void videoRef.current.parentElement.requestFullscreen();
+    }
+  };
+  const handleDebugToggle = () => setShowDebugInfo(!showDebugInfo);
+
   return (
-    <div className="app-container">
-      {/* 
-        Placeholder for WebcamFeed, Controls, DebugInfo.
-        These will be developed in subsequent steps.
-      */}
-      <p>Webcam App Placeholder</p>
+    <div className="app-container" id="app-main-container">
       {error && <p style={{color: 'red'}}>{error}</p>}
 
       <video
         autoPlay
+        className="webcam-video"
         playsInline
         ref={videoRef}
         style={{
-          backgroundColor: 'black',
-          height: '100%',
-          maxHeight: '100vh',
-          maxWidth: '100vw',
           objectFit: fillMode,
           transform: isFlipped ? 'scaleX(-1)' : 'scaleX(1)',
-          width: '100%',
         }}
       />
 
-      <div>
-        <h3>Available Video Devices:</h3>
-        {devices.length === 0 && (
-          <p>
-            No video devices found. Make sure your camera is connected and
-            permissions are granted.
-          </p>
-        )}
-        <select
-          disabled={devices.length === 0}
-          onChange={(e) => setSelectedDeviceId(e.target.value)}
-          value={selectedDeviceId}>
-          {devices.map((device) => (
-            <option key={device.deviceId} value={device.deviceId}>
-              {device.label || `Camera ${device.deviceId.substring(0, 8)}`}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Controls
+        devices={devices}
+        fillMode={fillMode}
+        isFlipped={isFlipped}
+        isVisible={controlsVisible}
+        onDeviceChange={handleDeviceChange}
+        onFillModeToggle={handleFillModeToggle}
+        onFlipToggle={handleFlipToggle}
+        onFullscreen={handleFullscreen}
+        selectedDeviceId={selectedDeviceId}
+      />
 
-      <div>
-        <h3>Controls (Temporary):</h3>
-        <button onClick={() => setIsFlipped(!isFlipped)}>
-          {isFlipped ? 'Unflip' : 'Flip Horizontal'}
-        </button>
-        <button
-          onClick={() =>
-            setFillMode(fillMode === 'cover' ? 'contain' : 'cover')
-          }>
-          {fillMode === 'cover' ? 'Contain Video' : 'Fill Container'}
-        </button>
-        <button onClick={() => setShowDebugInfo(!showDebugInfo)}>
-          {showDebugInfo ? 'Hide Debug' : 'Show Debug'}
-        </button>
-      </div>
+      {/* Debug Toggle Button */}
+      <button
+        className="debug-toggle-button"
+        onClick={handleDebugToggle}
+        title={
+          showDebugInfo ? 'Hide Debug Information' : 'Show Debug Information'
+        }>
+        {showDebugInfo ? 'DBG' : 'DBG'} {/* Simple label, could be an icon */}
+      </button>
 
       {showDebugInfo && (
-        <div>
-          <h3>Debug Info (Temporary):</h3>
-          <p>Selected Device ID: {selectedDeviceId}</p>
-          <p>Flipped: {isFlipped.toString()}</p>
-          <p>Fill Mode: {fillMode}</p>
-          {stream?.getVideoTracks()?.[0] && (
-            <>
-              <p>Device Label: {stream.getVideoTracks()[0].label}</p>
-              <p>
-                Requested Frame Rate:{' '}
-                {stream.getVideoTracks()[0].getSettings()?.frameRate} fps
-              </p>
-            </>
-          )}
-        </div>
+        <DebugInfo
+          fillMode={fillMode}
+          isFlipped={isFlipped}
+          selectedDeviceId={selectedDeviceId}
+          stream={stream}
+          videoResolution={videoResolution}
+        />
       )}
+
+      {/* --- Temporary Controls & Info - Will be replaced by components --- */}
+      {/* REMOVED OLD TEMPORARY DEBUG INFO FROM HERE */}
+      {/* --- End Temporary --- */}
     </div>
   );
 }

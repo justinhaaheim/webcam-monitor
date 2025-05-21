@@ -1,0 +1,59 @@
+.controls-overlay {
+  position: absolute;
+  bottom: 20px; /* Position at the bottom */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.6); /* Slightly more opaque */
+  padding: 12px 15px;
+  border-radius: 10px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition:
+    opacity 0.3s ease-in-out,
+    visibility 0.3s ease-in-out;
+  opacity: 1;
+  visibility: visible;
+}
+
+.controls-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-group label {
+  font-size: 0.9em;
+  margin-right: 4px;
+}
+
+.controls-overlay select,
+.controls-overlay button {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s ease;
+}
+
+.controls-overlay select:hover,
+.controls-overlay button:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+.controls-overlay select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Add styles for icons if you plan to use them, e.g. using an icon library */
