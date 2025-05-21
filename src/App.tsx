@@ -246,6 +246,11 @@ function App() {
         color="neutral"
         onClick={handleDebugToggle}
         sx={{
+          // Smooth transition for position change
+          '&:hover': {
+            backgroundColor: 'neutral.softHoverBg',
+          },
+
           // Remove padding if using an icon, or keep minimal for text
           borderRadius: '50%',
 
@@ -254,16 +259,11 @@ function App() {
           // Smaller font if text is still DBG
           boxShadow: 'sm',
 
-          // Smooth transition for position change
-          '&:hover': {
-            backgroundColor: 'neutral.softHoverBg',
-          },
+          // Circular button
+          fontSize: '0.75em',
 
           // More square-like for an icon button feel
           height: '36px',
-
-          // Circular button
-          fontSize: '0.75em',
 
           minWidth: 'auto',
 
