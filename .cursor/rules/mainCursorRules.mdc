@@ -1,0 +1,73 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Important General Guidelines:
+
+- **When starting work on a new task you should ALWAYS start by zooming out to make a high-level work plan that is grounded in smart, careful design choices.** 
+  - **ALWAYS make this plan and share it with me explicitly in our chat before starting your work.**
+  - Ask yourself "What does this code need to be able to do to solve this problem/task?" and then carefully reason out how to best implement each part of it, taking into account good design patterns and the specific guidance I have provided here and in our chat.
+  - If the task is simple and straightforward you can begin coding the solution right away. *If it is complex or has multiple steps wait to start your coding until we've aligned on the design and plan.*
+
+- **NEVER disable a lint rule unless explicitly authorized to do so.**
+  - The lint rules for this project were carefully chosen for a reason. These rules help prevent anti-patterns, mistakes, and hard-to-debug code.
+  - If you are seeing a lint warning or error it is because there is a problem with the code that should be fixed by *improving the code*.
+  - You should always attempt to improve the code in order to address the warnings/errors. 
+  - If you are unable to resolve the issue you should **always** explicitly flag the issue to me in our chat so that we can address it together.
+
+- Use `null` when a particular property is absent (instead of an empty string, empty array, the number 0, etc.). For instance, if an object has a property `uri` that is not known now, but will be known in the future, then `uri` should be set to `null` instead of an empty string. This improves clarity and reduces bugs. Note that you may need to update the typescript type definition, and accommodate the new null possibility at other points in the code.
+
+- When creating something new (a component, module, hook, service, etc) check the codebase for code that already exists to fulfill that purpose. If you are uncertain whether to change existing code or create new code, ask me in our chat.
+- Always check for errors or warnings when you've finished writing some code. Make sure to check both typescript and lint. Use `npm run signal` to check typescript, lint and prettier all together.
+- Use functional, declarative programming. Never use javascript classes unless specifically requested. Prefer the module pattern over classes.
+- Perfer the function syntax (as opposed to the const / arrow function syntax) for functions or components defined at the top level of a file. Otherwise use whatever is most idiomatic.
+
+
+
+## React:
+
+- Use functional components and TypeScript interfaces.
+- Create custom react hooks to encapsulate code that goes together, especially if it will be reused.
+- Rigorously follow good react patterns, and avoid anti-patterns. Be attentive to best practices.
+- Avoid patterns that cause React to re-render needlessly.
+  - In most cases, functions or objects that are created within a React functional component should be memoized with `useCallback` or `useMemo` to avoid rerendering the components they are passed to.
+- Be attentive to when something can be better handled imperatively as part of user/browser/system event handler than by a `useEffect`
+- Closely follow the advice and best practices outlined in the "You Might Not Need an Effect" summary below.
+
+### Hooks
+- NEVER disable the exhaustive-deps ESLint rule that applies to most of the react hooks. Doing so is very likely to introduce bugs that are hard to detect. There are better ways to control when effects, etc are run that also have the benefit of being more explicit.
+  - Always include all dependencies in the dependency array of hooks like `useEffect`, `useCallback`, `useMemo`, etc.
+  - If a dependency causes an infinite loop, solve the root cause rather than removing the dependency.
+- Extract complex calculations or transformations into useMemo or useCallback as appropriate.
+
+
+### Summary of "You Might Not Need an Effect" from the React Docs
+
+- When to avoid Effects:
+  - For data transformations during rendering - Calculate derived values directly in render phase
+  - For handling user events - Put logic in event handlers, not Effects
+  
+- Better alternatives to Effects:
+  - For derived values: Calculate during rendering rather than updating state in an Effect
+  - For expensive calculations: Use `useMemo` instead of state + Effect
+  - For resetting state when props change: 
+    - For full component reset: Pass a different `key` to reset entire tree
+    - For partial reset: Set state directly during rendering with appropriate checks
+  
+- Common anti-patterns to avoid:
+  - Chaining Effects that update state to trigger other Effects
+  - Notifying parent of state changes via Effects - Use event handlers
+  - Sending POST requests after user interactions - Use event handlers
+  - Initializing app in component Effects - Use module scope or check if already run
+  
+- When Effects **are** appropriate:
+  - Synchronizing with external systems (browser APIs, non-React widgets)
+  - Fetching data that's needed whenever component is visible
+    - Include proper cleanup to prevent race conditions
+  - Subscribing to external stores (preferably use `useSyncExternalStore`)
+
+- **Core philosophy**: Keep data flow predictable and minimize unnecessary renders by calculating what you can during rendering, handling interactions in event handlers, and using Effects only when truly synchronizing with external systems.
+
+Key excerpt:
+> **When you're not sure whether some code should be in an Effect or in an event handler, ask yourself** ***why*** **this code needs to run. Use Effects only for code that should run** ***because*** **the component was displayed to the user.** In this example, the notification should appear because the user *pressed the button*, not because the page was displayed! Delete the Effect and put the shared logic into a function called from both event handlers...

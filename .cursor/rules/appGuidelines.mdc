@@ -1,0 +1,22 @@
+---
+description: Guidlines specific to this app
+globs: *.js,*.jsx,*.ts,*.tsx
+alwaysApply: false
+---
+
+# General Context and Guidelines:
+
+## Scripts
+
+Use these scripts to check for typescript and lint issues:
+
+- `npm run ts-check` - Check for typescript errors
+- `npm run lint` - Check for lint issues
+- `npm run signal` - Check for ts, lint and prettier errors
+
+You can also use the tools directly via `npx`:
+
+- `npx tsc --noEmit [file]`
+- `npx eslint [file]`
+
+**Do NOT use `cd [path] && [command]` at the start of your commands** unless it is absolutely necessary. `cd` commands are blocked by default and require explicit permission, which slows us both down. 
