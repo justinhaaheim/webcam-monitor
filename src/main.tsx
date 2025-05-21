@@ -1,4 +1,3 @@
-import './index.css';
 import '@fontsource/inter';
 
 import Button from '@mui/joy/Button';

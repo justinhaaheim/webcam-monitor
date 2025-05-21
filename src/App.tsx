@@ -1,10 +1,11 @@
-import './App.css';
-
+import Box from '@mui/joy/Box';
+import Button from '@mui/joy/Button';
 import {useEffect, useRef, useState} from 'react';
 
-import Controls from './Controls'; // Import the new Controls component
-import DebugInfo from './DebugInfo'; // Import the DebugInfo component
-// import DebugInfo from './DebugInfo'; // To be created
+import Controls from './Controls';
+import DebugInfo from './DebugInfo';
+
+// Removed import './App.css';
 
 function App() {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
@@ -12,7 +13,7 @@ function App() {
     undefined,
   );
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
-  const [fillMode, setFillMode] = useState<'cover' | 'contain'>('cover'); // 'cover' for fill, 'contain' for contain
+  const [fillMode, setFillMode] = useState<'cover' | 'contain'>('cover');
   const [showDebugInfo, setShowDebugInfo] = useState<boolean>(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,10 +23,10 @@ function App() {
     width: number | undefined;
   }>({height: undefined, width: undefined});
   const controlsTimeoutRef = useRef<number | null>(null);
+  const appContainerRef = useRef<HTMLDivElement>(null); // Ref for the main container
 
-  const HIDE_CONTROLS_DELAY = 3000; // 3 seconds
+  const HIDE_CONTROLS_DELAY = 3000;
 
-  // Function to show controls and reset hide timer
   const showControlsAndResetTimer = () => {
     setControlsVisible(true);
     if (controlsTimeoutRef.current) {
@@ -37,41 +38,42 @@ function App() {
   };
 
   useEffect(() => {
-    // Initial call to show controls and start timer
     showControlsAndResetTimer();
+    const currentAppContainer = appContainerRef.current;
 
-    // Event listeners for activity on the app container
-    const appContainer = document.getElementById('app-main-container'); // Assuming app-container has this ID or use a ref
-    if (appContainer) {
-      appContainer.addEventListener('mousemove', showControlsAndResetTimer);
-      appContainer.addEventListener('mousedown', showControlsAndResetTimer);
+    if (currentAppContainer) {
+      currentAppContainer.addEventListener(
+        'mousemove',
+        showControlsAndResetTimer,
+      );
+      currentAppContainer.addEventListener(
+        'mousedown',
+        showControlsAndResetTimer,
+      );
     }
-    // Listen for keydown on window as it might not be focused on appContainer
     window.addEventListener('keydown', showControlsAndResetTimer);
 
     return () => {
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
       }
-      if (appContainer) {
-        appContainer.removeEventListener(
+      if (currentAppContainer) {
+        currentAppContainer.removeEventListener(
           'mousemove',
           showControlsAndResetTimer,
         );
-        appContainer.removeEventListener(
+        currentAppContainer.removeEventListener(
           'mousedown',
           showControlsAndResetTimer,
         );
       }
       window.removeEventListener('keydown', showControlsAndResetTimer);
     };
-  }, []); // Run only on mount and unmount
+  }, []);
 
-  // Get available media devices
   useEffect(() => {
     const getDevices = async () => {
       try {
-        // Request permission first to ensure labels are populated
         await navigator.mediaDevices.getUserMedia({audio: false, video: true});
         const allDevices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = allDevices.filter(
@@ -94,23 +96,21 @@ function App() {
       }
     };
     void getDevices();
-  }, [selectedDeviceId]); // Rerun if selectedDeviceId changes to ensure it's still valid
+  }, [selectedDeviceId]);
 
-  // Effect to get and set the media stream based on selected device
   useEffect(() => {
     if (selectedDeviceId) {
-      // Stop any existing stream before starting a new one
       if (stream) {
         stream.getTracks().forEach((track) => track.stop());
       }
-
       const getMedia = async () => {
         try {
           const newStream = await navigator.mediaDevices.getUserMedia({
-            video: {deviceId: {exact: selectedDeviceId}}, // No audio needed
+            audio: false,
+            video: {deviceId: {exact: selectedDeviceId}},
           });
           setStream(newStream);
-          setError(null); // Clear previous errors
+          setError(null);
         } catch (err) {
           console.error('Error accessing webcam:', err);
           setError(
@@ -120,8 +120,6 @@ function App() {
         }
       };
       void getMedia();
-
-      // Cleanup function to stop the stream when component unmounts or device changes
       return () => {
         if (stream) {
           stream.getTracks().forEach((track) => track.stop());
@@ -129,31 +127,25 @@ function App() {
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDeviceId]); // Only re-run when selectedDeviceId changes
+  }, [selectedDeviceId]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      // Listen for loadedmetadata to get initial video dimensions
+    const currentVideoRef = videoRef.current;
+    if (currentVideoRef && stream) {
+      currentVideoRef.srcObject = stream;
       const handleLoadedMetadata = () => {
-        if (videoRef.current) {
+        if (currentVideoRef) {
           setVideoResolution({
-            height: videoRef.current.videoHeight,
-            width: videoRef.current.videoWidth,
+            height: currentVideoRef.videoHeight,
+            width: currentVideoRef.videoWidth,
           });
         }
       };
-      videoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
-
-      // Optional: Listen for resize events on the video element if its display size can change
-      // and you want to track that separately from the intrinsic video resolution.
-      // For intrinsic resolution, loadedmetadata is usually enough.
-
+      currentVideoRef.addEventListener('loadedmetadata', handleLoadedMetadata);
       return () => {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        videoRef.current?.removeEventListener(
+        currentVideoRef?.removeEventListener(
           'loadedmetadata',
           handleLoadedMetadata,
         );
@@ -163,40 +155,80 @@ function App() {
 
   if (error && devices.length === 0) {
     return (
-      <div className="app-error">
+      <Box
+        sx={{
+          alignItems: 'center',
+          backgroundColor: 'black',
+          color: 'white',
+          display: 'flex',
+          fontSize: '1.2em',
+          height: '100vh',
+          justifyContent: 'center',
+          p: 3,
+          textAlign: 'center',
+          width: '100vw',
+        }}>
         Error: {error} Please ensure you have a camera connected and permissions
         are granted.
-      </div>
+      </Box>
     );
   }
 
-  // TODO: Implement actual components for these
   const handleDeviceChange = (deviceId: string) =>
     setSelectedDeviceId(deviceId);
   const handleFlipToggle = () => setIsFlipped(!isFlipped);
   const handleFillModeToggle = () =>
     setFillMode(fillMode === 'cover' ? 'contain' : 'cover');
   const handleFullscreen = () => {
-    if (videoRef.current?.parentElement) {
-      void videoRef.current.parentElement.requestFullscreen();
+    if (appContainerRef.current) {
+      // Request fullscreen on the main container
+      void appContainerRef.current.requestFullscreen();
     }
   };
   const handleDebugToggle = () => setShowDebugInfo(!showDebugInfo);
 
   return (
-    <div className="app-container" id="app-main-container">
-      {error && <p style={{color: 'red'}}>{error}</p>}
-
+    <Box
+      ref={appContainerRef} // Added ref for event listeners and fullscreen
+      sx={{
+        alignItems: 'center',
+        backgroundColor: 'black',
+        display: 'flex',
+        height: '100vh',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        position: 'relative',
+        width: '100vw',
+      }}>
       <video
         autoPlay
-        className="webcam-video"
         playsInline
         ref={videoRef}
         style={{
+          backgroundColor: 'black',
+          height: '100%',
           objectFit: fillMode,
           transform: isFlipped ? 'scaleX(-1)' : 'scaleX(1)',
+          width: '100%',
         }}
       />
+
+      {error && !stream && (
+        <Box
+          sx={{
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            borderRadius: 1,
+            color: 'red',
+            left: '50%',
+            p: 1,
+            position: 'absolute',
+            top: '10px',
+            transform: 'translateX(-50%)',
+            zIndex: 100, // For Joy UI, consider using theme.radius or direct values like 'sm', 'md'
+          }}>
+          {error}
+        </Box>
+      )}
 
       <Controls
         devices={devices}
@@ -210,15 +242,45 @@ function App() {
         selectedDeviceId={selectedDeviceId}
       />
 
-      {/* Debug Toggle Button */}
-      <button
-        className="debug-toggle-button"
+      <Button
         onClick={handleDebugToggle}
+        sx={{
+          '&:hover': {
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          },
+
+          // backgroundColor and border might be handled by variant or need Joy specific tokens
+          // For Joy, you might use theme tokens for colors and borders
+          // e.g. backgroundColor: 'neutral.solidBg', borderColor: 'neutral.outlinedBorder'
+          // Keeping direct values for now, but this is an area for Joy-specific refinement
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+
+          bottom: '80px',
+
+          // Adjusted for a more Joy-like subtle button
+          color: 'white',
+
+          fontSize: '0.8em',
+
+          minWidth: 'auto',
+
+          padding: '6px 10px',
+
+          position: 'absolute',
+
+          right: '10px',
+
+          zIndex: 25,
+        }}
         title={
           showDebugInfo ? 'Hide Debug Information' : 'Show Debug Information'
-        }>
-        {showDebugInfo ? 'DBG' : 'DBG'} {/* Simple label, could be an icon */}
-      </button>
+        }
+        variant="solid" // Changed to Joy UI variant
+      >
+        DBG
+      </Button>
 
       {showDebugInfo && (
         <DebugInfo
@@ -229,11 +291,7 @@ function App() {
           videoResolution={videoResolution}
         />
       )}
-
-      {/* --- Temporary Controls & Info - Will be replaced by components --- */}
-      {/* REMOVED OLD TEMPORARY DEBUG INFO FROM HERE */}
-      {/* --- End Temporary --- */}
-    </div>
+    </Box>
   );
 }
 

@@ -1,5 +1,5 @@
-import './DebugInfo.css'; // We'll create this next
-
+import Box from '@mui/joy/Box';
+import Typography from '@mui/joy/Typography';
 import React, {useEffect, useRef, useState} from 'react';
 
 interface DebugInfoProps {
@@ -8,7 +8,6 @@ interface DebugInfoProps {
   selectedDeviceId: string | undefined;
   stream: MediaStream | null;
   videoResolution: {height: number | undefined; width: number | undefined};
-  // FPS will be calculated internally
 }
 
 const DebugInfo: React.FC<DebugInfoProps> = ({
@@ -24,22 +23,17 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
 
   useEffect(() => {
     let animationFrameId: number;
-
     const calculateFps = (timestamp: number) => {
       fpsCounterRef.current++;
       const deltaTime = timestamp - lastTimestampRef.current;
-
       if (deltaTime >= 1000) {
-        // Update FPS every second
         setCurrentFps(fpsCounterRef.current);
         fpsCounterRef.current = 0;
         lastTimestampRef.current = timestamp;
       }
       animationFrameId = requestAnimationFrame(calculateFps);
     };
-
     animationFrameId = requestAnimationFrame(calculateFps);
-
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
@@ -48,36 +42,111 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
   const videoTrack = stream?.getVideoTracks()?.[0];
   const settings = videoTrack?.getSettings();
 
+  const valueStyles = {
+    color: 'primary.plainColor',
+    fontWeight: 'bold',
+    ml: 1,
+    textAlign: 'right',
+  };
+  const labelStyles = {
+    color: 'text.secondary',
+  };
+
   return (
-    <div className="debug-info-panel">
-      <p>
-        <strong>Debug Information</strong>
-      </p>
-      <p>
-        Device ID: <span>{selectedDeviceId?.substring(0, 10)}...</span>
-      </p>
-      <p>
-        Label: <span>{videoTrack?.label ?? 'N/A'}</span>
-      </p>
-      <p>
-        Actual Res:{' '}
-        <span>
+    <Box
+      sx={{
+        backgroundColor: 'background.surface',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 'md',
+        bottom: '10px',
+        boxShadow: 'sm',
+        color: 'text.primary',
+        fontSize: '13px',
+        maxWidth: '280px',
+        padding: '10px 15px',
+        position: 'absolute',
+        right: '10px',
+        transition: 'opacity 0.3s ease-in-out, visibility 0.3s ease-in-out',
+        zIndex: 20,
+      }}>
+      <Typography
+        component="p"
+        level="title-sm"
+        sx={{fontWeight: 'bold', mb: 1, textAlign: 'center'}}>
+        Debug Information
+      </Typography>
+      <Box
+        component="div"
+        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
+        <Typography component="span" sx={labelStyles}>
+          Device ID:
+        </Typography>
+        <Typography component="span" sx={valueStyles}>
+          {selectedDeviceId?.substring(0, 10)}...
+        </Typography>
+      </Box>
+      <Box
+        component="div"
+        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
+        <Typography component="span" sx={labelStyles}>
+          Label:
+        </Typography>
+        <Typography component="span" sx={valueStyles}>
+          {videoTrack?.label ?? 'N/A'}
+        </Typography>
+      </Box>
+      <Box
+        component="div"
+        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
+        <Typography component="span" sx={labelStyles}>
+          Actual Res:
+        </Typography>
+        <Typography component="span" sx={valueStyles}>
           {videoResolution.width ?? 'N/A'}x{videoResolution.height ?? 'N/A'}
-        </span>
-      </p>
-      <p>
-        Set FPS: <span>{settings?.frameRate?.toFixed(1) ?? 'N/A'}</span>
-      </p>
-      <p>
-        Render FPS: <span>{currentFps}</span>
-      </p>
-      <p>
-        Fill Mode: <span>{fillMode}</span>
-      </p>
-      <p>
-        Flipped: <span>{isFlipped.toString()}</span>
-      </p>
-    </div>
+        </Typography>
+      </Box>
+      <Box
+        component="div"
+        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
+        <Typography component="span" sx={labelStyles}>
+          Set FPS:
+        </Typography>
+        <Typography component="span" sx={valueStyles}>
+          {settings?.frameRate?.toFixed(1) ?? 'N/A'}
+        </Typography>
+      </Box>
+      <Box
+        component="div"
+        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
+        <Typography component="span" sx={labelStyles}>
+          Render FPS:
+        </Typography>
+        <Typography component="span" sx={valueStyles}>
+          {currentFps}
+        </Typography>
+      </Box>
+      <Box
+        component="div"
+        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
+        <Typography component="span" sx={labelStyles}>
+          Fill Mode:
+        </Typography>
+        <Typography component="span" sx={valueStyles}>
+          {fillMode}
+        </Typography>
+      </Box>
+      <Box
+        component="div"
+        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
+        <Typography component="span" sx={labelStyles}>
+          Flipped:
+        </Typography>
+        <Typography component="span" sx={valueStyles}>
+          {isFlipped.toString()}
+        </Typography>
+      </Box>
+    </Box>
   );
 };
 
