@@ -43,109 +43,92 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
   const settings = videoTrack?.getSettings();
 
   const valueStyles = {
-    color: 'primary.plainColor',
-    fontWeight: 'bold',
-    ml: 1,
+    color: 'primary.500',
+    fontFamily: 'monospace',
+    fontWeight: 'md',
+    ml: 1.5,
     textAlign: 'right',
   };
   const labelStyles = {
-    color: 'text.secondary',
+    color: 'text.tertiary',
+    fontSize: '0.8rem',
   };
 
   return (
     <Box
       sx={{
-        backgroundColor: 'background.surface',
+        backdropFilter: 'blur(8px)',
+        backgroundColor: 'rgba(10, 10, 10, 0.8)',
         border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 'md',
+        borderColor: 'neutral.700',
+        borderRadius: 'lg',
         bottom: '10px',
-        boxShadow: 'sm',
-        color: 'text.primary',
-        fontSize: '13px',
-        maxWidth: '280px',
-        padding: '10px 15px',
+        boxShadow: 'md',
+        color: 'neutral.200',
+        fontSize: '0.875rem',
+        maxWidth: '300px',
+        padding: '12px 18px',
         position: 'absolute',
         right: '10px',
         transition: 'opacity 0.3s ease-in-out, visibility 0.3s ease-in-out',
         zIndex: 20,
       }}>
       <Typography
-        component="p"
-        level="title-sm"
-        sx={{fontWeight: 'bold', mb: 1, textAlign: 'center'}}>
-        Debug Information
+        level="title-md"
+        sx={{color: 'neutral.50', mb: 1.5, textAlign: 'center'}}>
+        Debug Info
       </Typography>
-      <Box
-        component="div"
-        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
-        <Typography component="span" sx={labelStyles}>
-          Device ID:
-        </Typography>
-        <Typography component="span" sx={valueStyles}>
-          {selectedDeviceId?.substring(0, 10)}...
-        </Typography>
-      </Box>
-      <Box
-        component="div"
-        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
-        <Typography component="span" sx={labelStyles}>
-          Label:
-        </Typography>
-        <Typography component="span" sx={valueStyles}>
-          {videoTrack?.label ?? 'N/A'}
-        </Typography>
-      </Box>
-      <Box
-        component="div"
-        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
-        <Typography component="span" sx={labelStyles}>
-          Actual Res:
-        </Typography>
-        <Typography component="span" sx={valueStyles}>
-          {videoResolution.width ?? 'N/A'}x{videoResolution.height ?? 'N/A'}
-        </Typography>
-      </Box>
-      <Box
-        component="div"
-        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
-        <Typography component="span" sx={labelStyles}>
-          Set FPS:
-        </Typography>
-        <Typography component="span" sx={valueStyles}>
-          {settings?.frameRate?.toFixed(1) ?? 'N/A'}
-        </Typography>
-      </Box>
-      <Box
-        component="div"
-        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
-        <Typography component="span" sx={labelStyles}>
-          Render FPS:
-        </Typography>
-        <Typography component="span" sx={valueStyles}>
-          {currentFps}
-        </Typography>
-      </Box>
-      <Box
-        component="div"
-        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
-        <Typography component="span" sx={labelStyles}>
-          Fill Mode:
-        </Typography>
-        <Typography component="span" sx={valueStyles}>
-          {fillMode}
-        </Typography>
-      </Box>
-      <Box
-        component="div"
-        sx={{display: 'flex', justifyContent: 'space-between', m: '6px 0'}}>
-        <Typography component="span" sx={labelStyles}>
-          Flipped:
-        </Typography>
-        <Typography component="span" sx={valueStyles}>
-          {isFlipped.toString()}
-        </Typography>
-      </Box>
+      {[
+        {
+          label: 'Device ID',
+          value:
+            (selectedDeviceId?.substring(0, 10) ?? 'N/A') +
+            (selectedDeviceId && selectedDeviceId.length > 10 ? '...' : ''),
+        },
+        {
+          label: 'Label',
+          value:
+            (videoTrack?.label?.substring(0, 25) ?? 'N/A') +
+            (videoTrack?.label && videoTrack.label.length > 25 ? '...' : ''),
+        },
+        {
+          label: 'Actual Res',
+          value: `${videoResolution.width ?? '-'}x${videoResolution.height ?? '-'}`,
+        },
+        {
+          label: 'Set FPS',
+          value: settings?.frameRate?.toFixed(1) ?? 'N/A',
+        },
+        {
+          label: 'Render FPS',
+          value: currentFps,
+        },
+        {
+          label: 'Fill Mode',
+          value: fillMode,
+        },
+        {
+          label: 'Flipped',
+          value: isFlipped.toString(),
+        },
+      ].map((item) => (
+        <Box
+          component="div"
+          key={item.label}
+          sx={{
+            alignItems: 'center',
+            display: 'flex',
+            justifyContent: 'space-between',
+            py: 0.5,
+          }}>
+          <Typography component="span" sx={labelStyles}>
+            {item.label}:
+          </Typography>
+          <Typography component="span" sx={valueStyles}>
+            {item.value}
+          </Typography>
+        </Box>
+      ))}
     </Box>
   );
 };

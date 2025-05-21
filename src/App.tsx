@@ -243,43 +243,51 @@ function App() {
       />
 
       <Button
+        color="neutral"
         onClick={handleDebugToggle}
         sx={{
+          // Remove padding if using an icon, or keep minimal for text
+          borderRadius: '50%',
+
+          bottom: controlsVisible ? '70px' : '20px',
+
+          // Smaller font if text is still DBG
+          boxShadow: 'sm',
+
+          // Smooth transition for position change
           '&:hover': {
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backgroundColor: 'neutral.softHoverBg',
           },
 
-          // backgroundColor and border might be handled by variant or need Joy specific tokens
-          // For Joy, you might use theme tokens for colors and borders
-          // e.g. backgroundColor: 'neutral.solidBg', borderColor: 'neutral.outlinedBorder'
-          // Keeping direct values for now, but this is an area for Joy-specific refinement
-          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          // More square-like for an icon button feel
+          height: '36px',
 
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-
-          bottom: '80px',
-
-          // Adjusted for a more Joy-like subtle button
-          color: 'white',
-
-          fontSize: '0.8em',
+          // Circular button
+          fontSize: '0.75em',
 
           minWidth: 'auto',
 
-          padding: '6px 10px',
+          padding: 0,
 
           position: 'absolute',
 
-          right: '10px',
+          // Adjust position based on controls visibility
+          right: '15px',
+
+          // Subtle shadow
+          transition: 'bottom 0.3s ease-in-out',
+
+          width: '36px',
 
           zIndex: 25,
         }}
         title={
           showDebugInfo ? 'Hide Debug Information' : 'Show Debug Information'
         }
-        variant="solid" // Changed to Joy UI variant
+        variant="soft" // Softer variant for a more subtle button
       >
-        DBG
+        DBG{' '}
+        {/* Replace with an Icon component if available e.g. <SettingsIcon /> */}
       </Button>
 
       {showDebugInfo && (
