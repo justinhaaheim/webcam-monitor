@@ -1,0 +1,67 @@
+{
+  "name": "jha-vite-ts-starter",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "npm": ">=9",
+    "node": ">=21.x"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "clean:build": "rm -rf build/",
+    "clean:node-modules": "rm -rf node_modules/",
+    "lint:fix": "npm run lint -- --fix",
+    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "prettier-check": "prettier --check .",
+    "prettier": "prettier --write .",
+    "signal:serial": "npm run ts-check; npm run lint; npm run prettier-check",
+    "signal": "npm run signal:serial",
+    "signal:parallel": "concurrently --names \"TS,LINT,PRETTIER\" -c \"bgBlack.bold,bgRed.bold,bgCyan.bold\" \"npm run ts-check\" \"npm run lint\" \"npm run prettier-check\"",
+    "ts-check": "tsc --noEmit",
+    "prepare": "husky",
+    "reinstall-my-lint-config": "npm install eslint-config-jha-react-node@github:justinhaaheim/eslint-config-jha-react-node"
+  },
+  "dependencies": {
+    "@emotion/react": "11.11.4",
+    "@emotion/styled": "11.11.5",
+    "@fontsource/inter": "5.0.18",
+    "@mui/icons-material": "5.15.20",
+    "@mui/joy": "5.0.0-beta.36",
+    "@mui/material": "5.15.21",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "8.2.1",
+    "eslint": "9.22.0",
+    "eslint-config-jha-react-node": "github:justinhaaheim/eslint-config-jha-react-node",
+    "husky": "9.1.7",
+    "lint-staged": "^14.0.1",
+    "prettier": "3.3.3",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.0"
+  },
+  "overrides": {
+    "eslint-plugin-typescript-sort-keys": {
+      "eslint": "^9.21.0"
+    },
+    "@typescript-eslint/experimental-utils": {
+      "eslint": "^9.21.0"
+    },
+    "@typescript-eslint/utils": {
+      "eslint": "^9.21.0"
+    }
+  },
+  "lint-staged": {
+    "**/*": "prettier --check --ignore-unknown",
+    "*.(js|jsx|cjs|ts|tsx)": [
+      "eslint --cache --max-warnings=0"
+    ]
+  }
+}
