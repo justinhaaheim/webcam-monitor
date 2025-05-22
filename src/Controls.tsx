@@ -1,7 +1,11 @@
+import AspectRatioOutlined from '@mui/icons-material/AspectRatioOutlined';
+import BugReportOutlined from '@mui/icons-material/BugReportOutlined';
+import CompareArrowsOutlined from '@mui/icons-material/CompareArrowsOutlined';
+import FullscreenExitOutlined from '@mui/icons-material/FullscreenExitOutlined';
+import FullscreenOutlined from '@mui/icons-material/FullscreenOutlined';
 import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
 import FormControl from '@mui/joy/FormControl';
-import FormLabel from '@mui/joy/FormLabel';
 import Option from '@mui/joy/Option';
 import Select from '@mui/joy/Select';
 import React from 'react';
@@ -12,7 +16,9 @@ interface ControlsProps {
   devices: MediaDeviceInfo[];
   fillMode: 'cover' | 'contain';
   isFlipped: boolean;
+  isFullScreen: boolean;
   isVisible: boolean;
+  onDebugToggle: () => void;
   onDeviceChange: (deviceId: string) => void;
   onFillModeToggle: () => void;
   onFlipToggle: () => void;
@@ -29,7 +35,9 @@ const Controls: React.FC<ControlsProps> = ({
   fillMode,
   onFillModeToggle,
   onFullscreen,
+  isFullScreen,
   isVisible,
+  onDebugToggle,
 }) => {
   if (!isVisible) {
     return null;
@@ -44,62 +52,57 @@ const Controls: React.FC<ControlsProps> = ({
     }
   };
 
-  const commonButtonStyles = {
-    fontSize: '0.875rem', // Slightly smaller font
-    padding: '4px 10px', // Adjust padding for a more compact button
-    textTransform: 'none',
-    minHeight: '32px', // Ensure consistent height
-    boxShadow: 'xs', // Subtle shadow from Joy UI theme
+  const iconButtonStyles = {
+    borderRadius: '50%',
+    boxShadow: 'sm',
+    height: '40px',
+    minWidth: 'auto',
+    padding: 0,
+    width: '40px',
   };
 
   return (
     <Box
       sx={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 10,
-        padding: '6px', // Reduced padding around the entire control group
-        borderRadius: 'lg', // Larger radius for the group container
-        display: 'flex',
         alignItems: 'center',
-        gap: 1.5, // Adjusted gap using theme spacing unit
-        transition: 'opacity 0.3s ease-in-out, visibility 0.3s ease-in-out',
+        borderRadius: 'lg',
+        bottom: '20px',
+        display: 'flex',
+        gap: 1.5,
+        left: '50%',
         opacity: isVisible ? 1 : 0,
+        padding: '8px',
+        position: 'absolute',
+        transform: 'translateX(-50%)',
+        transition: 'opacity 0.3s ease-in-out, visibility 0.3s ease-in-out',
         visibility: isVisible ? 'visible' : 'hidden',
-        // backgroundColor: 'rgba(0, 0, 0, 0.1)', // Optional: very subtle background for the bar
-        // backdropFilter: 'blur(4px)', // Optional: frosted glass effect
+        zIndex: 10,
+        // backgroundColor: 'rgba(255, 255, 255, 0.1)', // Optional subtle background
+        // backdropFilter: 'blur(5px)', // Optional frosted glass
       }}>
       <FormControl size="sm" sx={{minWidth: 180}}>
-        <FormLabel
-          sx={{color: 'neutral.plainColor', mb: 0.2, fontSize: '0.75rem'}}>
-          {' '}
-          {/* Smaller label */}
-          Camera
-        </FormLabel>
         <Select
-          variant="soft" // Softer variant for Select
           color="neutral"
-          placeholder="Select camera..."
-          value={selectedDeviceId ?? ''}
-          onChange={handleJoySelectChange}
           disabled={devices.length === 0}
+          onChange={handleJoySelectChange}
+          placeholder="Select camera..."
           slotProps={{
             button: {
               sx: {
+                boxShadow: 'sm',
                 fontSize: '0.875rem',
-                minHeight: '32px',
-                boxShadow: 'xs',
+                minHeight: '40px',
               },
             },
             listbox: {
               sx: {
-                backgroundColor: 'background.popup', // Joy UI token for popup backgrounds
+                backgroundColor: 'background.popup',
                 fontSize: '0.875rem',
               },
             },
-          }}>
+          }}
+          value={selectedDeviceId ?? ''}
+          variant="soft">
           {devices.map((device) => (
             <Option key={device.deviceId} value={device.deviceId}>
               {device.label || `Camera ${device.deviceId.substring(0, 10)}...`}
@@ -109,30 +112,39 @@ const Controls: React.FC<ControlsProps> = ({
       </FormControl>
 
       <Button
-        variant="soft" // Softer variant for buttons
         color="neutral"
         onClick={onFlipToggle}
+        sx={iconButtonStyles}
         title={isFlipped ? 'Unflip Video' : 'Flip Video Horizontally'}
-        sx={commonButtonStyles}>
-        {isFlipped ? 'Unflip' : 'Flip'}
+        variant="soft">
+        <CompareArrowsOutlined />
       </Button>
 
       <Button
-        variant="soft"
         color="neutral"
         onClick={onFillModeToggle}
+        sx={iconButtonStyles}
         title={fillMode === 'cover' ? 'Contain Video' : 'Fill Container'}
-        sx={commonButtonStyles}>
-        {fillMode === 'cover' ? 'Contain' : 'Fill'}
+        variant="soft">
+        <AspectRatioOutlined />
       </Button>
 
       <Button
-        variant="soft"
         color="neutral"
         onClick={onFullscreen}
-        title="Enter Fullscreen"
-        sx={commonButtonStyles}>
-        Fullscreen
+        sx={iconButtonStyles}
+        title={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+        variant="soft">
+        {isFullScreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+      </Button>
+
+      <Button
+        color="neutral"
+        onClick={onDebugToggle}
+        sx={{...iconButtonStyles, marginLeft: 'auto'}}
+        title="Toggle Debug Information"
+        variant="soft">
+        <BugReportOutlined />
       </Button>
     </Box>
   );

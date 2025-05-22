@@ -18,6 +18,7 @@ function App() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
   const [videoResolution, setVideoResolution] = useState<{
     height: number | undefined;
     width: number | undefined;
@@ -25,7 +26,7 @@ function App() {
   const controlsTimeoutRef = useRef<number | null>(null);
   const appContainerRef = useRef<HTMLDivElement>(null); // Ref for the main container
 
-  const HIDE_CONTROLS_DELAY = 3000;
+  const HIDE_CONTROLS_DELAY = 10000;
 
   const showControlsAndResetTimer = () => {
     setControlsVisible(true);
@@ -36,6 +37,16 @@ function App() {
       setControlsVisible(false);
     }, HIDE_CONTROLS_DELAY);
   };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullScreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   useEffect(() => {
     showControlsAndResetTimer();
@@ -180,9 +191,32 @@ function App() {
   const handleFillModeToggle = () =>
     setFillMode(fillMode === 'cover' ? 'contain' : 'cover');
   const handleFullscreen = () => {
-    if (appContainerRef.current) {
-      // Request fullscreen on the main container
-      void appContainerRef.current.requestFullscreen();
+    if (!document.fullscreenElement) {
+      appContainerRef.current?.requestFullscreen().catch((err: unknown) => {
+        if (err instanceof Error) {
+          console.error(
+            `Error attempting to enable full-screen mode: ${err.message} (${err.name})`,
+          );
+        } else {
+          console.error(
+            'An unknown error occurred while enabling full-screen mode.',
+            err,
+          );
+        }
+      });
+    } else {
+      document.exitFullscreen().catch((err: unknown) => {
+        if (err instanceof Error) {
+          console.error(
+            `Error attempting to exit full-screen mode: ${err.message} (${err.name})`,
+          );
+        } else {
+          console.error(
+            'An unknown error occurred while exiting full-screen mode.',
+            err,
+          );
+        }
+      });
     }
   };
   const handleDebugToggle = () => setShowDebugInfo(!showDebugInfo);
@@ -217,14 +251,14 @@ function App() {
         <Box
           sx={{
             backgroundColor: 'rgba(0,0,0,0.7)',
-            borderRadius: 1,
+            borderRadius: 'sm',
             color: 'red',
             left: '50%',
             p: 1,
             position: 'absolute',
             top: '10px',
             transform: 'translateX(-50%)',
-            zIndex: 100, // For Joy UI, consider using theme.radius or direct values like 'sm', 'md'
+            zIndex: 100,
           }}>
           {error}
         </Box>
@@ -234,61 +268,16 @@ function App() {
         devices={devices}
         fillMode={fillMode}
         isFlipped={isFlipped}
+        isFullScreen={isFullScreen}
         isVisible={controlsVisible}
+        onDebugToggle={handleDebugToggle}
         onDeviceChange={handleDeviceChange}
         onFillModeToggle={handleFillModeToggle}
         onFlipToggle={handleFlipToggle}
         onFullscreen={handleFullscreen}
         selectedDeviceId={selectedDeviceId}
+        showDebugInfo={showDebugInfo}
       />
-
-      <Button
-        color="neutral"
-        onClick={handleDebugToggle}
-        sx={{
-          // Smooth transition for position change
-          '&:hover': {
-            backgroundColor: 'neutral.softHoverBg',
-          },
-
-          // Remove padding if using an icon, or keep minimal for text
-          borderRadius: '50%',
-
-          bottom: controlsVisible ? '70px' : '20px',
-
-          // Smaller font if text is still DBG
-          boxShadow: 'sm',
-
-          // Circular button
-          fontSize: '0.75em',
-
-          // More square-like for an icon button feel
-          height: '36px',
-
-          minWidth: 'auto',
-
-          padding: 0,
-
-          position: 'absolute',
-
-          // Adjust position based on controls visibility
-          right: '15px',
-
-          // Subtle shadow
-          transition: 'bottom 0.3s ease-in-out',
-
-          width: '36px',
-
-          zIndex: 25,
-        }}
-        title={
-          showDebugInfo ? 'Hide Debug Information' : 'Show Debug Information'
-        }
-        variant="soft" // Softer variant for a more subtle button
-      >
-        DBG{' '}
-        {/* Replace with an Icon component if available e.g. <SettingsIcon /> */}
-      </Button>
 
       {showDebugInfo && (
         <DebugInfo
