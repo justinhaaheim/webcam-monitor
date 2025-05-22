@@ -115,16 +115,58 @@ function App() {
       }
       const getMedia = async () => {
         try {
-          const newStream = await navigator.mediaDevices.getUserMedia({
+          const constraints: MediaStreamConstraints = {
             audio: false,
-            video: {deviceId: {exact: selectedDeviceId}},
-          });
+            video: {
+              deviceId: {exact: selectedDeviceId},
+              // Request HD width
+              height: {ideal: 1080},
+              width: {ideal: 1920}, // Request HD height
+              // frameRate: { ideal: 30 } // Can also request frame rate
+            },
+          };
+          console.log(
+            'Requesting media with constraints:',
+            JSON.stringify(constraints, null, 2),
+          );
+          const newStream =
+            await navigator.mediaDevices.getUserMedia(constraints);
+
+          const videoTracks = newStream.getVideoTracks();
+          if (videoTracks.length > 0) {
+            const firstTrack = videoTracks[0];
+            if (firstTrack) {
+              const capabilities = firstTrack.getCapabilities();
+              console.log(
+                'Video track capabilities:',
+                JSON.stringify(capabilities, null, 2),
+              );
+
+              // const trackSettings = videoTracks[0]?.getSettings(); // User's original commented out line
+              const allTrackSettings = videoTracks.map((track) =>
+                track.getSettings(),
+              );
+              console.log(
+                'Actual video track settings (all tracks):',
+                JSON.stringify(allTrackSettings, null, 2),
+              );
+            } else {
+              console.log(
+                'No first video track found to get capabilities or settings.',
+              );
+            }
+          } else {
+            console.log('No video tracks found on the stream.');
+          }
+
           setStream(newStream);
           setError(null);
         } catch (err) {
-          console.error('Error accessing webcam:', err);
+          console.error('Error accessing webcam with new constraints:', err);
+          // Fallback to default constraints if HD fails? Or just show error.
+          // For now, just show error.
           setError(
-            `Error accessing selected camera. It might be in use or unavailable. Try another one.`,
+            `Error accessing camera with HD constraints. It might not support the requested resolution. Error: ${err instanceof Error ? err.message : String(err)}`,
           );
           setStream(null);
         }
