@@ -178,6 +178,7 @@ function App() {
         }
       };
     }
+    return;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDeviceId]);
 
@@ -203,6 +204,7 @@ function App() {
         );
       };
     }
+    return;
   }, [stream]);
 
   if (error && devices.length === 0) {
