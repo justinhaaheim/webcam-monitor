@@ -84,8 +84,16 @@ function App() {
   useEffect(() => {
     const getDevices = async () => {
       try {
-        await navigator.mediaDevices.getUserMedia({audio: false, video: true});
+        // TODO: Why is this here?? This is creating the stream we see. The other stream isn't working.
+        await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            height: {ideal: 1080},
+            width: {ideal: 1920},
+          },
+        });
         const allDevices = await navigator.mediaDevices.enumerateDevices();
+        console.log('All devices:', allDevices);
         const videoDevices = allDevices.filter(
           (device) => device.kind === 'videoinput',
         );
