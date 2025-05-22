@@ -82,25 +82,40 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const getDevices = async () => {
+    const getDevicesAndPermissions = async () => {
       try {
-        // TODO: Why is this here?? This is creating the stream we see. The other stream isn't working.
-        await navigator.mediaDevices.getUserMedia({
+        // 1. Request initial permission (stream is temporary and stopped immediately)
+        // This helps ensure permissions are granted before enumerateDevices is called,
+        // which can sometimes return more accurate/complete device labels after permission.
+        const permissionStream = await navigator.mediaDevices.getUserMedia({
           audio: false,
-          video: {
-            height: {ideal: 1080},
-            width: {ideal: 1920},
-          },
+          video: true, // Simple constraint just for permission
         });
+        permissionStream.getTracks().forEach((track) => track.stop());
+
+        // 2. Enumerate devices
         const allDevices = await navigator.mediaDevices.enumerateDevices();
         console.log('All devices:', allDevices);
         const videoDevices = allDevices.filter(
           (device) => device.kind === 'videoinput',
         );
         setDevices(videoDevices);
+
+        // 3. Set initial selected device if not already set
         if (videoDevices.length > 0 && !selectedDeviceId) {
-          if (videoDevices[0]?.deviceId) {
+          // Check local storage for a previously selected device
+          const storedDeviceId = localStorage.getItem('selectedVideoDeviceId');
+          if (
+            storedDeviceId &&
+            videoDevices.some((d) => d.deviceId === storedDeviceId)
+          ) {
+            setSelectedDeviceId(storedDeviceId);
+          } else if (videoDevices[0]?.deviceId) {
             setSelectedDeviceId(videoDevices[0].deviceId);
+            localStorage.setItem(
+              'selectedVideoDeviceId',
+              videoDevices[0].deviceId,
+            );
           }
         }
       } catch (err) {
@@ -113,34 +128,57 @@ function App() {
         );
       }
     };
-    void getDevices();
-  }, [selectedDeviceId]);
+    void getDevicesAndPermissions();
+    // This effect should run once on mount to get initial permissions and devices.
+    // selectedDeviceId is included because we use it to determine if we should set a default.
+    // However, the core logic of fetching devices and permissions itself doesn't depend on it changing later.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setDevices, setSelectedDeviceId, setError]); // Add stable setters if required by stricter linting, but intent is once.
 
   useEffect(() => {
-    if (selectedDeviceId) {
+    // This effect manages acquiring and cleaning up the media stream
+    // based on the selectedDeviceId.
+    if (!selectedDeviceId) {
       if (stream) {
         stream.getTracks().forEach((track) => track.stop());
+        setStream(null);
       }
-      const getMedia = async () => {
-        try {
-          const constraints: MediaStreamConstraints = {
-            audio: false,
-            video: {
-              deviceId: {exact: selectedDeviceId},
-              // Request HD width
-              height: {ideal: 1080},
-              width: {ideal: 1920}, // Request HD height
-              // frameRate: { ideal: 30 } // Can also request frame rate
-            },
-          };
-          console.log(
-            'Requesting media with constraints:',
-            JSON.stringify(constraints, null, 2),
-          );
-          const newStream =
-            await navigator.mediaDevices.getUserMedia(constraints);
+      return;
+    }
 
-          const videoTracks = newStream.getVideoTracks();
+    let isActive = true; // Flag to prevent state updates on unmounted component
+    let newStreamInstance: MediaStream | null = null;
+
+    const getMedia = async () => {
+      try {
+        // Stop any existing stream before acquiring a new one
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
+
+        const constraints: MediaStreamConstraints = {
+          audio: false,
+          video: {
+            deviceId: {exact: selectedDeviceId},
+
+            // Request HD, allow fallback
+            frameRate: {ideal: 60, min: 30},
+
+            // Request HD, allow fallback
+            height: {ideal: 1080, min: 720},
+            width: {ideal: 1920, min: 1280}, // Request high frame rate, allow fallback
+          },
+        };
+        console.log(
+          'Requesting media with constraints:',
+          JSON.stringify(constraints, null, 2),
+        );
+
+        newStreamInstance =
+          await navigator.mediaDevices.getUserMedia(constraints);
+
+        if (isActive) {
+          const videoTracks = newStreamInstance.getVideoTracks();
           if (videoTracks.length > 0) {
             const firstTrack = videoTracks[0];
             if (firstTrack) {
@@ -149,8 +187,6 @@ function App() {
                 'Video track capabilities:',
                 JSON.stringify(capabilities, null, 2),
               );
-
-              // const trackSettings = videoTracks[0]?.getSettings(); // User's original commented out line
               const allTrackSettings = videoTracks.map((track) =>
                 track.getSettings(),
               );
@@ -158,37 +194,36 @@ function App() {
                 'Actual video track settings (all tracks):',
                 JSON.stringify(allTrackSettings, null, 2),
               );
-            } else {
-              console.log(
-                'No first video track found to get capabilities or settings.',
-              );
             }
           } else {
-            console.log('No video tracks found on the stream.');
+            console.log('No video tracks found on the new stream.');
           }
-
-          setStream(newStream);
+          setStream(newStreamInstance);
           setError(null);
-        } catch (err) {
-          console.error('Error accessing webcam with new constraints:', err);
-          // Fallback to default constraints if HD fails? Or just show error.
-          // For now, just show error.
+          // Store the successfully selected device ID
+          localStorage.setItem('selectedVideoDeviceId', selectedDeviceId);
+        }
+      } catch (err) {
+        console.error('Error accessing webcam with new constraints:', err);
+        if (isActive) {
           setError(
-            `Error accessing camera with HD constraints. It might not support the requested resolution. Error: ${err instanceof Error ? err.message : String(err)}`,
+            `Error accessing camera: ${err instanceof Error ? err.message : String(err)}. It might not support the requested resolution/framerate or is in use.`,
           );
-          setStream(null);
+          setStream(null); // Clear stream on error
         }
-      };
-      void getMedia();
-      return () => {
-        if (stream) {
-          stream.getTracks().forEach((track) => track.stop());
-        }
-      };
-    }
-    return;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDeviceId]);
+      }
+    };
+
+    void getMedia();
+
+    return () => {
+      isActive = false;
+      // Cleanup: stop tracks of the stream instance created in this effect run
+      if (newStreamInstance) {
+        newStreamInstance.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [selectedDeviceId, stream, setStream, setError]); // Re-run when selectedDeviceId changes, or stream setters change
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
