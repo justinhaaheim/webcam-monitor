@@ -135,27 +135,37 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setDevices, setSelectedDeviceId, setError]); // Add stable setters if required by stricter linting, but intent is once.
 
+  // Effect solely for cleaning up the stream when it changes or on unmount
   useEffect(() => {
-    // This effect manages acquiring and cleaning up the media stream
-    // based on the selectedDeviceId.
-    if (!selectedDeviceId) {
+    // This cleanup function will be called when the `stream` state changes
+    // or when the component unmounts.
+    return () => {
       if (stream) {
+        console.log(
+          'Cleanup effect: Stopping all tracks for the current stream.',
+        );
         stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [stream]); // Dependency: only the stream itself.
+
+  // Effect for ACQUIRING the stream when selectedDeviceId changes
+  useEffect(() => {
+    if (!selectedDeviceId) {
+      // If no device is selected, ensure the stream state is null.
+      // The cleanup effect above will handle stopping tracks if stream was not already null.
+      if (stream !== null) {
         setStream(null);
       }
       return;
     }
 
     let isActive = true; // Flag to prevent state updates on unmounted component
-    let newStreamInstance: MediaStream | null = null;
 
     const getMedia = async () => {
+      // The previous stream (if any, and if different from what we are about to set)
+      // will be cleaned up by the separate cleanup effect when setStream is called.
       try {
-        // Stop any existing stream before acquiring a new one
-        if (stream) {
-          stream.getTracks().forEach((track) => track.stop());
-        }
-
         const constraints: MediaStreamConstraints = {
           audio: false,
           video: {
@@ -170,14 +180,17 @@ function App() {
           },
         };
         console.log(
-          'Requesting media with constraints:',
+          `Acquisition effect: Requesting media for deviceId: ${selectedDeviceId} with constraints:`,
           JSON.stringify(constraints, null, 2),
         );
 
-        newStreamInstance =
+        const newStreamInstance =
           await navigator.mediaDevices.getUserMedia(constraints);
 
         if (isActive) {
+          console.log(
+            `Acquisition effect: Successfully got new stream for deviceId: ${selectedDeviceId}`,
+          );
           const videoTracks = newStreamInstance.getVideoTracks();
           if (videoTracks.length > 0) {
             const firstTrack = videoTracks[0];
@@ -198,18 +211,30 @@ function App() {
           } else {
             console.log('No video tracks found on the new stream.');
           }
-          setStream(newStreamInstance);
+          setStream(newStreamInstance); // This will trigger the cleanup effect for the *old* stream if it was different
           setError(null);
-          // Store the successfully selected device ID
           localStorage.setItem('selectedVideoDeviceId', selectedDeviceId);
+        } else {
+          // If the effect became inactive (e.g., component unmounted or selectedDeviceId changed again quickly)
+          // stop the stream we just acquired but won't use.
+          console.log(
+            `Acquisition effect: isActive became false. Stopping tracks for orphaned new stream for deviceId: ${selectedDeviceId}`,
+          );
+          newStreamInstance.getTracks().forEach((track) => track.stop());
         }
       } catch (err) {
-        console.error('Error accessing webcam with new constraints:', err);
+        console.error(
+          `Acquisition effect: Error accessing webcam for deviceId: ${selectedDeviceId}`,
+          err,
+        );
         if (isActive) {
           setError(
             `Error accessing camera: ${err instanceof Error ? err.message : String(err)}. It might not support the requested resolution/framerate or is in use.`,
           );
-          setStream(null); // Clear stream on error
+          // Ensure stream is cleared on error, which will also trigger cleanup effect for any prior stream.
+          if (stream !== null) {
+            setStream(null);
+          }
         }
       }
     };
@@ -218,12 +243,15 @@ function App() {
 
     return () => {
       isActive = false;
-      // Cleanup: stop tracks of the stream instance created in this effect run
-      if (newStreamInstance) {
-        newStreamInstance.getTracks().forEach((track) => track.stop());
-      }
+      // The main stream cleanup (for streams that made it into state) is handled by the separate effect.
+      // The newStreamInstance (local to getMedia) is stopped if isActive is false when getMedia resolves.
+      console.log(
+        `Acquisition effect cleanup: isActive set to false for deviceId: ${selectedDeviceId}`,
+      );
     };
-  }, [selectedDeviceId, stream, setStream, setError]); // Re-run when selectedDeviceId changes, or stream setters change
+    // This effect runs when selectedDeviceId changes, or when setStream/setError setters change (which are stable).
+    // It does *not* depend on the `stream` state directly for its decision to run or acquire media.
+  }, [selectedDeviceId, setStream, setError, stream]); // stream needs to be here if we read it to decide to call setStream(null)
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
