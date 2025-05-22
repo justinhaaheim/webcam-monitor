@@ -1,5 +1,4 @@
 import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
 import {useEffect, useRef, useState} from 'react';
 
 import Controls from './Controls';
@@ -240,7 +239,10 @@ function App() {
         ref={videoRef}
         style={{
           backgroundColor: 'black',
+          display: 'block',
           height: '100%',
+          maxHeight: '100%',
+          maxWidth: '100%',
           objectFit: fillMode,
           transform: isFlipped ? 'scaleX(-1)' : 'scaleX(1)',
           width: '100%',

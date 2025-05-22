@@ -9,8 +9,6 @@ import FormControl from '@mui/joy/FormControl';
 import Option from '@mui/joy/Option';
 import Select from '@mui/joy/Select';
 import React from 'react';
-// import IconButton from '@mui/joy/IconButton'; // Consider for future icon use
-// import { SettingsBrightness } from '@mui/icons-material'; // Example Icon
 
 interface ControlsProps {
   devices: MediaDeviceInfo[];
@@ -24,6 +22,7 @@ interface ControlsProps {
   onFlipToggle: () => void;
   onFullscreen: () => void;
   selectedDeviceId: string | undefined;
+  showDebugInfo: boolean;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -77,8 +76,6 @@ const Controls: React.FC<ControlsProps> = ({
         transition: 'opacity 0.3s ease-in-out, visibility 0.3s ease-in-out',
         visibility: isVisible ? 'visible' : 'hidden',
         zIndex: 10,
-        // backgroundColor: 'rgba(255, 255, 255, 0.1)', // Optional subtle background
-        // backdropFilter: 'blur(5px)', // Optional frosted glass
       }}>
       <FormControl size="sm" sx={{minWidth: 180}}>
         <Select
