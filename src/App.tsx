@@ -1,5 +1,5 @@
 import Box from '@mui/joy/Box';
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 
 import Controls from './Controls';
 import DebugInfo from './DebugInfo';
@@ -24,8 +24,90 @@ function App() {
   }>({height: undefined, width: undefined});
   const controlsTimeoutRef = useRef<number | null>(null);
   const appContainerRef = useRef<HTMLDivElement>(null); // Ref for the main container
+  const initialStreamAcquiredRef = useRef<boolean>(false); // Track if we've already initialized a stream
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const HIDE_CONTROLS_DELAY = 10000;
+
+  // Central function to update stream based on a device ID
+  const updateStream = useCallback(
+    async (deviceId?: string) => {
+      // First stop any existing stream
+      if (stream) {
+        console.log('Stopping tracks on existing stream');
+        stream.getTracks().forEach((track) => track.stop());
+        setStream(null); // Clear the stream state immediately after stopping
+      }
+
+      // If no deviceId is provided, just leave the stream as null
+      if (!deviceId) {
+        console.log('No device ID provided, stream will remain null');
+        return;
+      }
+
+      try {
+        console.log(`Requesting media for deviceId: ${deviceId}`);
+        const constraints: MediaStreamConstraints = {
+          audio: false,
+          video: {
+            deviceId: {exact: deviceId},
+
+            // Request HD, allow fallback
+            frameRate: {ideal: 60, min: 30},
+
+            // Request HD, allow fallback
+            height: {ideal: 1080, min: 720},
+            width: {ideal: 1920, min: 1280}, // Request high frame rate, allow fallback
+          },
+        };
+
+        const newStream =
+          await navigator.mediaDevices.getUserMedia(constraints);
+
+        // Log capabilities and settings
+        const videoTracks = newStream.getVideoTracks();
+        if (videoTracks.length > 0) {
+          const firstTrack = videoTracks[0];
+          if (firstTrack) {
+            const capabilities = firstTrack.getCapabilities();
+            console.log(
+              'Video track capabilities:',
+              JSON.stringify(capabilities, null, 2),
+            );
+            const allTrackSettings = videoTracks.map((track) =>
+              track.getSettings(),
+            );
+            console.log(
+              'Actual video track settings (all tracks):',
+              JSON.stringify(allTrackSettings, null, 2),
+            );
+          }
+        } else {
+          console.log('No video tracks found on the new stream.');
+        }
+
+        // Set the new stream to state
+        setStream(newStream);
+        setError(null);
+
+        // Store the successfully selected device ID
+        localStorage.setItem('selectedVideoDeviceId', deviceId);
+      } catch (err) {
+        console.error(`Error accessing webcam for deviceId: ${deviceId}`, err);
+        setError(
+          `Error accessing camera: ${err instanceof Error ? err.message : String(err)}. It might not support the requested resolution/framerate or is in use.`,
+        );
+        // Ensure stream is cleared on error (already set to null above)
+      }
+    },
+    [stream], // stream is needed because we read its value
+  );
+
+  // Event handler for device change - called by dropdown
+  const handleDeviceChange = (deviceId: string) => {
+    setSelectedDeviceId(deviceId);
+    void updateStream(deviceId); // Immediately update the stream (imperative)
+  };
 
   const showControlsAndResetTimer = () => {
     setControlsVisible(true);
@@ -37,6 +119,7 @@ function App() {
     }, HIDE_CONTROLS_DELAY);
   };
 
+  // Fullscreen effect - this is fine as is
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullScreen(Boolean(document.fullscreenElement));
@@ -47,6 +130,7 @@ function App() {
     };
   }, []);
 
+  // Controls visibility effect - this is fine as is
   useEffect(() => {
     showControlsAndResetTimer();
     const currentAppContainer = appContainerRef.current;
@@ -81,19 +165,18 @@ function App() {
     };
   }, []);
 
+  // Initial device enumeration effect - runs once on mount
   useEffect(() => {
     const getDevicesAndPermissions = async () => {
       try {
-        // 1. Request initial permission (stream is temporary and stopped immediately)
-        // This helps ensure permissions are granted before enumerateDevices is called,
-        // which can sometimes return more accurate/complete device labels after permission.
+        // Request initial permission (stream is temporary and stopped immediately)
         const permissionStream = await navigator.mediaDevices.getUserMedia({
           audio: false,
           video: true, // Simple constraint just for permission
         });
         permissionStream.getTracks().forEach((track) => track.stop());
 
-        // 2. Enumerate devices
+        // Enumerate devices
         const allDevices = await navigator.mediaDevices.enumerateDevices();
         console.log('All devices:', allDevices);
         const videoDevices = allDevices.filter(
@@ -101,7 +184,7 @@ function App() {
         );
         setDevices(videoDevices);
 
-        // 3. Set initial selected device if not already set
+        // Set initial selected device if not already set
         if (videoDevices.length > 0 && !selectedDeviceId) {
           // Check local storage for a previously selected device
           const storedDeviceId = localStorage.getItem('selectedVideoDeviceId');
@@ -112,11 +195,8 @@ function App() {
             setSelectedDeviceId(storedDeviceId);
           } else if (videoDevices[0]?.deviceId) {
             setSelectedDeviceId(videoDevices[0].deviceId);
-            localStorage.setItem(
-              'selectedVideoDeviceId',
-              videoDevices[0].deviceId,
-            );
           }
+          // Note: We don't call updateStream here, as that happens in the selectedDeviceId effect
         }
       } catch (err) {
         console.error(
@@ -129,132 +209,27 @@ function App() {
       }
     };
     void getDevicesAndPermissions();
-    // This effect should run once on mount to get initial permissions and devices.
-    // selectedDeviceId is included because we use it to determine if we should set a default.
-    // However, the core logic of fetching devices and permissions itself doesn't depend on it changing later.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setDevices, setSelectedDeviceId, setError]); // Add stable setters if required by stricter linting, but intent is once.
+  }, [selectedDeviceId]); // Runs once on mount
 
-  // Effect solely for cleaning up the stream when it changes or on unmount
+  // Effect to initialize stream once when selectedDeviceId becomes available
   useEffect(() => {
-    // This cleanup function will be called when the `stream` state changes
-    // or when the component unmounts.
+    if (selectedDeviceId && !initialStreamAcquiredRef.current) {
+      initialStreamAcquiredRef.current = true;
+      void updateStream(selectedDeviceId);
+    }
+  }, [selectedDeviceId, updateStream]);
+
+  // Effect to cleanup stream on unmount
+  useEffect(() => {
     return () => {
       if (stream) {
-        console.log(
-          'Cleanup effect: Stopping all tracks for the current stream.',
-        );
+        console.log('Component unmounting, stopping all tracks');
         stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [stream]); // Dependency: only the stream itself.
+  }, [stream]); // Only depend on stream to get latest reference
 
-  // Effect for ACQUIRING the stream when selectedDeviceId changes
-  useEffect(() => {
-    if (!selectedDeviceId) {
-      // If no device is selected, ensure the stream state is null.
-      // The cleanup effect above will handle stopping tracks if stream was not already null.
-      if (stream !== null) {
-        setStream(null);
-      }
-      return;
-    }
-
-    let isActive = true; // Flag to prevent state updates on unmounted component
-
-    const getMedia = async () => {
-      // The previous stream (if any, and if different from what we are about to set)
-      // will be cleaned up by the separate cleanup effect when setStream is called.
-      try {
-        const constraints: MediaStreamConstraints = {
-          audio: false,
-          video: {
-            deviceId: {exact: selectedDeviceId},
-
-            // Request HD, allow fallback
-            frameRate: {ideal: 60, min: 30},
-
-            // Request HD, allow fallback
-            height: {ideal: 1080, min: 720},
-            width: {ideal: 1920, min: 1280}, // Request high frame rate, allow fallback
-          },
-        };
-        console.log(
-          `Acquisition effect: Requesting media for deviceId: ${selectedDeviceId} with constraints:`,
-          JSON.stringify(constraints, null, 2),
-        );
-
-        const newStreamInstance =
-          await navigator.mediaDevices.getUserMedia(constraints);
-
-        if (isActive) {
-          console.log(
-            `Acquisition effect: Successfully got new stream for deviceId: ${selectedDeviceId}`,
-          );
-          const videoTracks = newStreamInstance.getVideoTracks();
-          if (videoTracks.length > 0) {
-            const firstTrack = videoTracks[0];
-            if (firstTrack) {
-              const capabilities = firstTrack.getCapabilities();
-              console.log(
-                'Video track capabilities:',
-                JSON.stringify(capabilities, null, 2),
-              );
-              const allTrackSettings = videoTracks.map((track) =>
-                track.getSettings(),
-              );
-              console.log(
-                'Actual video track settings (all tracks):',
-                JSON.stringify(allTrackSettings, null, 2),
-              );
-            }
-          } else {
-            console.log('No video tracks found on the new stream.');
-          }
-          setStream(newStreamInstance); // This will trigger the cleanup effect for the *old* stream if it was different
-          setError(null);
-          localStorage.setItem('selectedVideoDeviceId', selectedDeviceId);
-        } else {
-          // If the effect became inactive (e.g., component unmounted or selectedDeviceId changed again quickly)
-          // stop the stream we just acquired but won't use.
-          console.log(
-            `Acquisition effect: isActive became false. Stopping tracks for orphaned new stream for deviceId: ${selectedDeviceId}`,
-          );
-          newStreamInstance.getTracks().forEach((track) => track.stop());
-        }
-      } catch (err) {
-        console.error(
-          `Acquisition effect: Error accessing webcam for deviceId: ${selectedDeviceId}`,
-          err,
-        );
-        if (isActive) {
-          setError(
-            `Error accessing camera: ${err instanceof Error ? err.message : String(err)}. It might not support the requested resolution/framerate or is in use.`,
-          );
-          // Ensure stream is cleared on error, which will also trigger cleanup effect for any prior stream.
-          if (stream !== null) {
-            setStream(null);
-          }
-        }
-      }
-    };
-
-    void getMedia();
-
-    return () => {
-      isActive = false;
-      // The main stream cleanup (for streams that made it into state) is handled by the separate effect.
-      // The newStreamInstance (local to getMedia) is stopped if isActive is false when getMedia resolves.
-      console.log(
-        `Acquisition effect cleanup: isActive set to false for deviceId: ${selectedDeviceId}`,
-      );
-    };
-    // This effect runs when selectedDeviceId changes, or when setStream/setError setters change (which are stable).
-    // It does *not* depend on the `stream` state directly for its decision to run or acquire media.
-  }, [selectedDeviceId, setStream, setError, stream]); // stream needs to be here if we read it to decide to call setStream(null)
-
-  const videoRef = useRef<HTMLVideoElement>(null);
-
+  // Video metadata effect - this is fine as is
   useEffect(() => {
     const currentVideoRef = videoRef.current;
     if (currentVideoRef && stream) {
@@ -299,8 +274,6 @@ function App() {
     );
   }
 
-  const handleDeviceChange = (deviceId: string) =>
-    setSelectedDeviceId(deviceId);
   const handleFlipToggle = () => setIsFlipped(!isFlipped);
   const handleFillModeToggle = () =>
     setFillMode(fillMode === 'cover' ? 'contain' : 'cover');
