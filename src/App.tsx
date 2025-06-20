@@ -56,18 +56,80 @@ function App() {
         const device = allDevices.find((d) => d.deviceId === deviceId);
         console.log('Selected device:', device);
 
-        const constraints: MediaStreamConstraints = {
-          audio: false,
-          video: {
+        // Get a basic stream first to check capabilities
+        let capabilityStream: MediaStream | null = null;
+        try {
+          capabilityStream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {deviceId: {exact: deviceId}},
+          });
+          const track = capabilityStream.getVideoTracks()[0];
+          if (track) {
+            const capabilities = track.getCapabilities();
+            console.log('Device capabilities:', capabilities);
+          }
+        } catch (err) {
+          console.warn('Could not get device capabilities:', err);
+        } finally {
+          if (capabilityStream) {
+            capabilityStream.getTracks().forEach((track) => track.stop());
+          }
+        }
+
+        // Try constraints with progressive fallback
+        const constraintSets = [
+          // First try: High quality with high framerate
+          {
             deviceId: {exact: deviceId},
             frameRate: {ideal: 60, min: 30},
             height: {ideal: 1080, min: 720},
             width: {ideal: 1920, min: 1280},
           },
-        };
+          // Second try: Medium quality with medium framerate
+          {
+            deviceId: {exact: deviceId},
+            frameRate: {ideal: 30, min: 15},
+            height: {ideal: 720, min: 480},
+            width: {ideal: 1280, min: 640},
+          },
+          // Third try: Basic quality
+          {
+            deviceId: {exact: deviceId},
+            height: {ideal: 480},
+            width: {ideal: 640},
+          },
+          // Last resort: Just the device ID
+          {
+            deviceId: {exact: deviceId},
+          },
+        ];
 
-        const newStream =
-          await navigator.mediaDevices.getUserMedia(constraints);
+        let newStream: MediaStream | null = null;
+        let lastError: Error | null = null;
+
+        for (let i = 0; i < constraintSets.length; i++) {
+          const constraints: MediaStreamConstraints = {
+            audio: false,
+            video: constraintSets[i],
+          };
+
+          try {
+            console.log(`Trying constraint set ${i + 1}:`, constraints.video);
+            newStream = await navigator.mediaDevices.getUserMedia(constraints);
+            console.log(`Success with constraint set ${i + 1}`);
+            break;
+          } catch (err) {
+            console.log(`Constraint set ${i + 1} failed:`, err);
+            lastError = err instanceof Error ? err : new Error(String(err));
+            if (i === constraintSets.length - 1) {
+              throw lastError;
+            }
+          }
+        }
+
+        if (!newStream) {
+          throw lastError ?? new Error('Failed to get media stream');
+        }
 
         // Log capabilities and settings
         const videoTracks = newStream.getVideoTracks();
