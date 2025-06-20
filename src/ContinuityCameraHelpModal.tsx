@@ -47,29 +47,40 @@ const ContinuityCameraHelpModal: React.FC<ContinuityCameraHelpModalProps> = ({
           steps to get it connected.
         </Typography>
 
-        {/* Essential Prerequisites */}
+        {/* Step 1: Enable Continuity Camera */}
         <Box sx={{mb: 3}}>
           <Typography
             level="title-md"
             sx={{alignItems: 'center', display: 'flex', gap: 1, mb: 2}}>
             <InfoOutlined fontSize="small" />
-            Essential Requirements
+            Step 1: Enable Continuity Camera
+          </Typography>
+          <Typography level="body-sm" sx={{mb: 1}}>
+            Make sure <strong>Continuity Camera is enabled</strong> in your
+            iPhone Settings app (Settings {'>'} General {'>'} AirPlay &
+            Continuity).
+          </Typography>
+        </Box>
+
+        <Divider sx={{my: 3}} />
+
+        {/* Step 2: Check iPhone Settings */}
+        <Box sx={{mb: 3}}>
+          <Typography
+            level="title-md"
+            sx={{alignItems: 'center', display: 'flex', gap: 1, mb: 2}}>
+            <PhoneIphoneOutlined fontSize="small" />
+            Step 2: Prepare Your iPhone
           </Typography>
           <Box component="ul" sx={{m: 0, pl: 3}}>
             <Typography component="li" level="body-sm" sx={{mb: 1}}>
-              <strong>Enable Continuity Camera</strong> in your iPhone Settings
-              app
+              <strong>Turn off Focus modes</strong> (especially Sleep mode) and
+              <strong> Low Power Mode</strong> on your iPhone
             </Typography>
             <Typography component="li" level="body-sm" sx={{mb: 1}}>
-              <strong>Disable Focus modes</strong> (especially Sleep mode) on
-              your iPhone
-            </Typography>
-            <Typography component="li" level="body-sm" sx={{mb: 1}}>
-              <strong>Disable Low Power Mode</strong> on your iPhone
-            </Typography>
-            <Typography component="li" level="body-sm" sx={{mb: 1}}>
-              <strong>Stop any audio/video playback</strong> on your iPhone
-              (music, videos, etc.)
+              <strong>Stop all audio/video playback</strong> on your iPhone,
+              including local playback (music, videos) and remote playback
+              (Apple TV, Spotify via Chromecast, etc.)
             </Typography>
             <Typography component="li" level="body-sm" sx={{mb: 1}}>
               <strong>
@@ -82,13 +93,13 @@ const ContinuityCameraHelpModal: React.FC<ContinuityCameraHelpModalProps> = ({
 
         <Divider sx={{my: 3}} />
 
-        {/* Primary Method - FaceTime */}
+        {/* Step 3: Check FaceTime */}
         <Box sx={{mb: 3}}>
           <Typography
             level="title-md"
             sx={{alignItems: 'center', display: 'flex', gap: 1, mb: 2}}>
             <WifiOutlined fontSize="small" />
-            Step 1: Check FaceTime
+            Step 3: Check FaceTime
           </Typography>
           <Box component="ol" sx={{m: 0, pl: 3}}>
             <Typography component="li" level="body-sm" sx={{mb: 1}}>
@@ -101,23 +112,24 @@ const ContinuityCameraHelpModal: React.FC<ContinuityCameraHelpModalProps> = ({
               Look for your iPhone under the <strong>Camera</strong> section
             </Typography>
             <Typography component="li" level="body-sm" sx={{mb: 1}}>
-              If you see it, click it to enable it, then check this app again
+              If you see it, select it to enable it, then check this app again
             </Typography>
           </Box>
         </Box>
 
         <Divider sx={{my: 3}} />
 
-        {/* USB-C Method */}
+        {/* Step 4: USB-C Method */}
         <Box sx={{mb: 3}}>
           <Typography
             level="title-md"
             sx={{alignItems: 'center', display: 'flex', gap: 1, mb: 2}}>
             <UsbOutlined fontSize="small" />
-            Step 2: USB-C Connection (Most Reliable)
+            Step 4: Try USB-C Connection
           </Typography>
           <Typography level="body-sm" sx={{fontStyle: 'italic', mb: 2}}>
-            If your iPhone doesn't appear in FaceTime, try this method:
+            If your iPhone doesn't appear in FaceTime, try connecting with a
+            cable:
           </Typography>
           <Box component="ol" sx={{m: 0, pl: 3}}>
             <Typography component="li" level="body-sm" sx={{mb: 1}}>
@@ -125,70 +137,68 @@ const ContinuityCameraHelpModal: React.FC<ContinuityCameraHelpModalProps> = ({
               <strong>USB-C cable</strong>
             </Typography>
             <Typography component="li" level="body-sm" sx={{mb: 1}}>
-              <strong>Close FaceTime</strong> completely
+              <strong>Close FaceTime</strong> completely, then{' '}
+              <strong>reopen it</strong>
             </Typography>
             <Typography component="li" level="body-sm" sx={{mb: 1}}>
-              <strong>Reopen FaceTime</strong> and check the video dropdown
-              again
+              Check the video dropdown again for your iPhone
             </Typography>
             <Typography component="li" level="body-sm" sx={{mb: 1}}>
-              Select your iPhone from the camera options
-            </Typography>
-            <Typography component="li" level="body-sm" sx={{mb: 1}}>
-              Return to this app - your iPhone should now appear in the camera
-              list
+              If found, select it and return to this app
             </Typography>
           </Box>
         </Box>
 
         <Divider sx={{my: 3}} />
 
-        {/* Magic Pose Method */}
+        {/* Step 5: Magic Pose Method */}
         <Box sx={{mb: 3}}>
-          <Typography level="title-sm" sx={{color: 'text.secondary', mb: 2}}>
-            Advanced: Wireless "Magic Pose" Method
-          </Typography>
           <Typography
-            level="body-xs"
-            sx={{color: 'text.secondary', fontStyle: 'italic', mb: 2}}>
-            This wireless method can work but is less reliable than using a USB
-            cable:
+            level="title-md"
+            sx={{alignItems: 'center', display: 'flex', gap: 1, mb: 2}}>
+            <PhoneIphoneOutlined fontSize="small" />
+            Step 5: Try the "Magic Pose"
           </Typography>
-          <Box component="ul" sx={{m: 0, pl: 3}}>
-            <Typography
-              component="li"
-              level="body-xs"
-              sx={{color: 'text.secondary', mb: 0.5}}>
-              Place iPhone in <strong>landscape orientation</strong>
+          <Typography level="body-sm" sx={{fontStyle: 'italic', mb: 2}}>
+            If USB connection doesn't work, try this wireless method:
+          </Typography>
+          <Box component="ol" sx={{m: 0, pl: 3}}>
+            <Typography component="li" level="body-sm" sx={{mb: 1}}>
+              Place your iPhone in <strong>landscape orientation</strong>
             </Typography>
-            <Typography
-              component="li"
-              level="body-xs"
-              sx={{color: 'text.secondary', mb: 0.5}}>
-              Phone must be <strong>locked with screen off</strong>
+            <Typography component="li" level="body-sm" sx={{mb: 1}}>
+              Ensure it's <strong>locked with screen off</strong>
             </Typography>
-            <Typography
-              component="li"
-              level="body-xs"
-              sx={{color: 'text.secondary', mb: 0.5}}>
-              Keep it <strong>motionless</strong> (prop it against your laptop
-              screen)
+            <Typography component="li" level="body-sm" sx={{mb: 1}}>
+              Keep it <strong>motionless</strong> and prop it so the{' '}
+              <strong>back cameras face you unobstructed</strong> (lean it
+              against your laptop screen)
             </Typography>
-            <Typography
-              component="li"
-              level="body-xs"
-              sx={{color: 'text.secondary', mb: 0.5}}>
-              <strong>Back cameras must face you</strong> with a person visible
-              in frame
+            <Typography component="li" level="body-sm" sx={{mb: 1}}>
+              Make sure <strong>a person is visible in the camera frame</strong>
             </Typography>
-            <Typography
-              component="li"
-              level="body-xs"
-              sx={{color: 'text.secondary', mb: 0.5}}>
-              Wait 5-30 seconds for it to appear in FaceTime automatically
+            <Typography component="li" level="body-sm" sx={{mb: 1}}>
+              Wait 5-30 seconds for it to appear automatically in FaceTime's
+              video dropdown
             </Typography>
           </Box>
         </Box>
+
+        <Divider sx={{my: 3}} />
+
+        <Typography
+          level="body-xs"
+          sx={{color: 'text.secondary', mb: 3, textAlign: 'center'}}>
+          Need additional help? Visit{' '}
+          <a
+            href="https://support.apple.com/en-us/102546"
+            rel="noopener noreferrer"
+            style={{color: 'inherit', textDecoration: 'underline'}}
+            target="_blank">
+            Apple's Continuity Camera Support Page
+          </a>{' '}
+          for more detailed troubleshooting.
+        </Typography>
 
         <Box sx={{display: 'flex', justifyContent: 'flex-end', mt: 4}}>
           <Button onClick={onClose} variant="solid">

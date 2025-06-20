@@ -147,6 +147,24 @@ Add a help modal to assist users in connecting their iPhone as a continuity came
 - No compilation errors
 - Proper React patterns used (functional components, hooks)
 
+### Modal Content Updates ✓
+
+Based on user feedback and [Apple's official documentation](https://support.apple.com/en-us/102546):
+
+1. **Improved Language** - Changed "Disable" to "Turn off" for better UX
+2. **Clarified Remote Playback** - Added Apple TV, Spotify via Chromecast examples
+3. **Reorganized Steps** - Clear 1-5 sequence prioritizing most reliable methods
+4. **Added Official Support Link** - Direct link to Apple's troubleshooting page
+5. **Enhanced Step Structure** - Each step is now a proper section with clear actions
+
+### Final Step Organization
+
+1. **Enable Continuity Camera** - Settings prerequisite
+2. **Prepare iPhone** - Turn off focus/low power, stop all playback
+3. **Check FaceTime** - Primary method to activate camera
+4. **Try USB-C** - Most reliable connection method
+5. **Magic Pose** - Advanced wireless fallback method
+
 ### Next Steps
 
 - [ ] Manual testing in browser
