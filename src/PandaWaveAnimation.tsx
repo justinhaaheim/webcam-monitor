@@ -25,11 +25,11 @@ const PandaWaveAnimation: React.FC<PandaWaveAnimationProps> = ({
       <style>
         {`
           @keyframes pandaWaveSequence {
-            /* Start off-screen */
+            /* Start off-screen bottom-right corner */
             0% { 
-              transform: translateX(100%) translateY(-25%) rotate(0deg);
+              transform: translateX(150%) translateY(50%) rotate(0deg);
             }
-            /* Slide in to visible position */
+            /* Slide in diagonally to visible position */
             9.09% { 
               transform: translateX(25%) translateY(-25%) rotate(0deg);
             }
@@ -37,32 +37,41 @@ const PandaWaveAnimation: React.FC<PandaWaveAnimationProps> = ({
             45.45% { 
               transform: translateX(25%) translateY(-25%) rotate(0deg);
             }
-            /* Start waving - faster now */
+            /* Start waving - much faster now */
             50% { 
-              transform: translateX(25%) translateY(-25%) rotate(-10deg);
+              transform: translateX(25%) translateY(-25%) rotate(-12deg);
             }
-            54.55% { 
-              transform: translateX(25%) translateY(-25%) rotate(10deg);
+            52% { 
+              transform: translateX(25%) translateY(-25%) rotate(12deg);
             }
-            59.09% { 
-              transform: translateX(25%) translateY(-25%) rotate(-10deg);
+            54% { 
+              transform: translateX(25%) translateY(-25%) rotate(-12deg);
             }
-            63.64% { 
-              transform: translateX(25%) translateY(-25%) rotate(10deg);
+            56% { 
+              transform: translateX(25%) translateY(-25%) rotate(12deg);
             }
-            68.18% { 
-              transform: translateX(25%) translateY(-25%) rotate(-10deg);
+            58% { 
+              transform: translateX(25%) translateY(-25%) rotate(-12deg);
             }
-            72.73% { 
+            60% { 
+              transform: translateX(25%) translateY(-25%) rotate(12deg);
+            }
+            62% { 
+              transform: translateX(25%) translateY(-25%) rotate(-12deg);
+            }
+            64% { 
+              transform: translateX(25%) translateY(-25%) rotate(12deg);
+            }
+            66% { 
               transform: translateX(25%) translateY(-25%) rotate(0deg);
             }
             /* Wait after waving (1s pause) */
             90.91% { 
               transform: translateX(25%) translateY(-25%) rotate(0deg);
             }
-            /* Slide out off-screen */
+            /* Slide out diagonally off-screen */
             100% { 
-              transform: translateX(100%) translateY(-25%) rotate(0deg);
+              transform: translateX(150%) translateY(50%) rotate(0deg);
             }
           }
         `}
@@ -79,7 +88,7 @@ const PandaWaveAnimation: React.FC<PandaWaveAnimationProps> = ({
           pointerEvents: 'none',
           position: 'fixed',
           right: '20px',
-          transform: 'translateX(100%) translateY(-25%) rotate(0deg)', // Start position
+          transform: 'translateX(150%) translateY(50%) rotate(0deg)', // Start position
           width: '120px',
           zIndex: 1000,
         }}

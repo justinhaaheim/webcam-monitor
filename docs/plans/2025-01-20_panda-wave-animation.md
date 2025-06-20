@@ -75,12 +75,16 @@ Adding a fun panda animation that appears from the bottom right corner, waves (w
 
 - Redesigned with single `pandaWaveSequence` keyframe animation (5.5s total)
 - Updated timing breakdown per user feedback:
-  - 0-9.09%: Slide in from off-screen right (0.5s)
+  - 0-9.09%: **Diagonal slide-in** from bottom-right corner (0.5s)
   - 9.09-45.45%: Wait positioned and still (2s pause)
-  - 45.45-72.73%: **Faster** waving back and forth (1.5s, 5 wave cycles)
-  - 72.73-90.91%: Wait positioned after waving (1s pause)
-  - 90.91-100%: Slide back out to off-screen right (0.5s)
+  - 45.45-66%: **Super fast** waving back and forth (1.1s, 8 wave cycles!)
+  - 66-90.91%: Wait positioned after waving (1.35s pause)
+  - 90.91-100%: **Diagonal slide-out** to bottom-right corner (0.5s)
 - Smooth easing throughout with `ease-in-out`
 - Uses `onAnimationEnd` event for completion callback
 - Much smoother motion than previous state-based approach
 - Added dramatic pauses for better comedic timing 🎭
+- **Latest updates**: Diagonal entrance/exit + super fast waving! ⚡️
+- Enhanced motion: Swoops in diagonally from bottom-right corner
+- Increased wave intensity: 8 cycles in 1.1s (was 5 cycles in 1.5s)
+- More dramatic and eye-catching entrance/exit animations
