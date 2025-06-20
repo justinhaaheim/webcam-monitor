@@ -3,6 +3,7 @@ import BugReportOutlined from '@mui/icons-material/BugReportOutlined';
 import CompareArrowsOutlined from '@mui/icons-material/CompareArrowsOutlined';
 import FullscreenExitOutlined from '@mui/icons-material/FullscreenExitOutlined';
 import FullscreenOutlined from '@mui/icons-material/FullscreenOutlined';
+import HelpOutlineOutlined from '@mui/icons-material/HelpOutlineOutlined';
 import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
 import FormControl from '@mui/joy/FormControl';
@@ -16,6 +17,7 @@ interface ControlsProps {
   isFlipped: boolean;
   isFullScreen: boolean;
   isVisible: boolean;
+  onContinuityCameraHelpOpen: () => void;
   onDebugToggle: () => void;
   onDeviceChange: (deviceId: string) => void;
   onFillModeToggle: () => void;
@@ -37,16 +39,21 @@ const Controls: React.FC<ControlsProps> = ({
   isFullScreen,
   isVisible,
   onDebugToggle,
+  onContinuityCameraHelpOpen,
 }) => {
   if (!isVisible) {
     return null;
   }
 
+  const HELP_OPTION_VALUE = '__continuity_camera_help__';
+
   const handleJoySelectChange = (
     _event: React.SyntheticEvent | null,
     newValue: string | null,
   ) => {
-    if (newValue !== null) {
+    if (newValue === HELP_OPTION_VALUE) {
+      onContinuityCameraHelpOpen();
+    } else if (newValue !== null) {
       onDeviceChange(newValue);
     }
   };
@@ -105,6 +112,28 @@ const Controls: React.FC<ControlsProps> = ({
               {device.label || `Camera ${device.deviceId.substring(0, 10)}...`}
             </Option>
           ))}
+
+          {/* Special help item for continuity camera */}
+          <Option
+            key={HELP_OPTION_VALUE}
+            sx={{
+              '&:hover': {
+                backgroundColor: 'primary.50',
+                color: 'primary.600',
+              },
+              borderColor: 'divider',
+              borderTop: '1px solid',
+              color: 'primary.500',
+              fontStyle: 'italic',
+              mt: 0.5,
+              pt: 1,
+            }}
+            value={HELP_OPTION_VALUE}>
+            <Box sx={{alignItems: 'center', display: 'flex', gap: 1}}>
+              <HelpOutlineOutlined fontSize="small" />
+              Looking for your iPhone continuity camera?
+            </Box>
+          </Option>
         </Select>
       </FormControl>
 

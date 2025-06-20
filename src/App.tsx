@@ -1,6 +1,7 @@
 import Box from '@mui/joy/Box';
 import {useCallback, useEffect, useRef, useState} from 'react';
 
+import ContinuityCameraHelpModal from './ContinuityCameraHelpModal';
 import Controls from './Controls';
 import DebugInfo from './DebugInfo';
 
@@ -18,6 +19,8 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+  const [isContinuityCameraHelpOpen, setIsContinuityCameraHelpOpen] =
+    useState<boolean>(false);
   const [videoResolution, setVideoResolution] = useState<{
     height: number | undefined;
     width: number | undefined;
@@ -498,6 +501,10 @@ function App() {
   const handleFlipToggle = () => setIsFlipped(!isFlipped);
   const handleFillModeToggle = () =>
     setFillMode(fillMode === 'cover' ? 'contain' : 'cover');
+  const handleContinuityCameraHelpOpen = () =>
+    setIsContinuityCameraHelpOpen(true);
+  const handleContinuityCameraHelpClose = () =>
+    setIsContinuityCameraHelpOpen(false);
   const handleFullscreen = () => {
     if (!document.fullscreenElement) {
       appContainerRef.current?.requestFullscreen().catch((err: unknown) => {
@@ -581,6 +588,7 @@ function App() {
         isFlipped={isFlipped}
         isFullScreen={isFullScreen}
         isVisible={controlsVisible}
+        onContinuityCameraHelpOpen={handleContinuityCameraHelpOpen}
         onDebugToggle={handleDebugToggle}
         onDeviceChange={handleDeviceChange}
         onFillModeToggle={handleFillModeToggle}
@@ -599,6 +607,11 @@ function App() {
           videoResolution={videoResolution}
         />
       )}
+
+      <ContinuityCameraHelpModal
+        onClose={handleContinuityCameraHelpClose}
+        open={isContinuityCameraHelpOpen}
+      />
     </Box>
   );
 }
