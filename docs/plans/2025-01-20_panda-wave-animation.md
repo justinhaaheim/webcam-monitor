@@ -115,3 +115,27 @@ Adding a fun panda animation that appears from the bottom right corner, waves (w
 - `🐼 Next panda visit scheduled in 12.3 minutes (at 2:45:30 PM)`
 - `🐼 Auto-triggering panda animation! 🎬`
 - `🐼 Panda animation completed! Scheduling next visit...`
+
+## Additional Features ✨
+
+### Dark HTML Background
+
+- Added near-black (#0a0a0a) background to index.html
+- Prevents white flash during pull-to-refresh on mobile
+- Consistent dark theming throughout app
+
+### Countdown Timer in Debug Menu
+
+- Shows "Countdown: 4m03s" format in debug info
+- Updates every second with real-time countdown
+- Disguised as generic countdown (doesn't spoil the surprise!)
+- Immediately schedules first visit (5min + random 5-20min)
+- Subsequent visits use only random 5-20min intervals
+
+### Beautiful Control Animations
+
+- Smooth fade in/out with cubic-bezier easing
+- 20px upward translation when showing
+- 20px downward translation when hiding
+- 0.4s duration for elegant motion
+- Always rendered for smooth CSS transitions

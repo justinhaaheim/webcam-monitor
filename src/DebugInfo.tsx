@@ -5,6 +5,7 @@ import React, {useEffect, useState} from 'react';
 interface DebugInfoProps {
   fillMode: 'cover' | 'contain';
   isFlipped: boolean;
+  nextPandaTime: number | null;
   onPandaTrigger: () => void;
   selectedDeviceId: string | undefined;
   stream: MediaStream | null;
@@ -15,11 +16,13 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
   stream,
   fillMode,
   isFlipped,
+  nextPandaTime,
   onPandaTrigger,
   selectedDeviceId,
   videoResolution,
 }) => {
   const [currentFps, setCurrentFps] = useState<number>(0);
+  const [countdown, setCountdown] = useState<string>('--:--');
 
   // Measure actual video stream FPS using video element events
   useEffect(() => {
@@ -53,6 +56,33 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
       cancelAnimationFrame(animationId);
     };
   }, [stream]);
+
+  // Update countdown timer
+  useEffect(() => {
+    if (!nextPandaTime) {
+      setCountdown('--:--');
+      return;
+    }
+
+    const updateCountdown = () => {
+      const now = Date.now();
+      const timeRemaining = nextPandaTime - now;
+
+      if (timeRemaining <= 0) {
+        setCountdown('00:00');
+        return;
+      }
+
+      const minutes = Math.floor(timeRemaining / 60000);
+      const seconds = Math.floor((timeRemaining % 60000) / 1000);
+      setCountdown(`${minutes}m${seconds.toString().padStart(2, '0')}s`);
+    };
+
+    updateCountdown(); // Initial update
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [nextPandaTime]);
 
   const videoTrack = stream?.getVideoTracks()?.[0];
   const settings = videoTrack?.getSettings();
@@ -134,6 +164,10 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
         {
           label: 'Flipped',
           value: isFlipped.toString(),
+        },
+        {
+          label: 'Countdown',
+          value: countdown,
         },
       ].map((item) => (
         <Box

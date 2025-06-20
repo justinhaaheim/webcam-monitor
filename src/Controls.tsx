@@ -41,9 +41,10 @@ const Controls: React.FC<ControlsProps> = ({
   onDebugToggle,
   onContinuityCameraHelpOpen,
 }) => {
-  if (!isVisible) {
-    return null;
-  }
+  // Always render but control visibility with CSS for smooth animations
+  // if (!isVisible) {
+  //   return null;
+  // }
 
   const HELP_OPTION_VALUE = '__continuity_camera_help__';
 
@@ -79,8 +80,11 @@ const Controls: React.FC<ControlsProps> = ({
         opacity: isVisible ? 1 : 0,
         padding: '8px',
         position: 'absolute',
-        transform: 'translateX(-50%)',
-        transition: 'opacity 0.3s ease-in-out, visibility 0.3s ease-in-out',
+        transform: isVisible
+          ? 'translateX(-50%) translateY(0)'
+          : 'translateX(-50%) translateY(20px)',
+        transition:
+          'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         visibility: isVisible ? 'visible' : 'hidden',
         zIndex: 10,
       }}>

@@ -28,6 +28,7 @@ function App() {
   }>({height: undefined, width: undefined});
   const [isPandaAnimationTriggered, setIsPandaAnimationTriggered] =
     useState<boolean>(false);
+  const [nextPandaTime, setNextPandaTime] = useState<number | null>(null);
   const pandaAutoTriggerTimeoutRef = useRef<number | null>(null);
   const controlsTimeoutRef = useRef<number | null>(null);
   const appContainerRef = useRef<HTMLDivElement>(null); // Ref for the main container
@@ -490,43 +491,51 @@ function App() {
     return randomMinutes * 60 * 1000; // Convert to milliseconds
   }, []);
 
-  // Schedule the next auto-trigger with random timing
-  const scheduleNextPandaAutoTrigger = useCallback(() => {
-    // Clear any existing timeout
-    if (pandaAutoTriggerTimeoutRef.current) {
-      clearTimeout(pandaAutoTriggerTimeoutRef.current);
-    }
-
-    const nextInterval = getRandomPandaInterval();
-    const nextVisitTime = new Date(Date.now() + nextInterval);
-    const minutesFromNow = (nextInterval / 60000).toFixed(1);
-
-    console.log(
-      `🐼 Next panda visit scheduled in ${minutesFromNow} minutes (at ${nextVisitTime.toLocaleTimeString()})`,
-    );
-
-    pandaAutoTriggerTimeoutRef.current = window.setTimeout(() => {
-      console.log('🐼 Auto-triggering panda animation! 🎬');
-      setIsPandaAnimationTriggered(true);
-    }, nextInterval);
+  // Generate initial interval including 5-minute startup delay
+  const getInitialPandaInterval = useCallback(() => {
+    const startupDelay = 5 * 60 * 1000; // 5 minutes
+    const randomInterval = getRandomPandaInterval();
+    return startupDelay + randomInterval;
   }, [getRandomPandaInterval]);
+
+  // Schedule the next auto-trigger with random timing
+  const scheduleNextPandaAutoTrigger = useCallback(
+    (useInitialDelay = false) => {
+      // Clear any existing timeout
+      if (pandaAutoTriggerTimeoutRef.current) {
+        clearTimeout(pandaAutoTriggerTimeoutRef.current);
+      }
+
+      const nextInterval = useInitialDelay
+        ? getInitialPandaInterval()
+        : getRandomPandaInterval();
+      const nextVisitTime = Date.now() + nextInterval;
+      const minutesFromNow = (nextInterval / 60000).toFixed(1);
+
+      setNextPandaTime(nextVisitTime);
+
+      console.log(
+        `🐼 Next panda visit scheduled in ${minutesFromNow} minutes (at ${new Date(nextVisitTime).toLocaleTimeString()})`,
+      );
+
+      pandaAutoTriggerTimeoutRef.current = window.setTimeout(() => {
+        console.log('🐼 Auto-triggering panda animation! 🎬');
+        setIsPandaAnimationTriggered(true);
+      }, nextInterval);
+    },
+    [getRandomPandaInterval, getInitialPandaInterval],
+  );
 
   // Initialize panda auto-trigger system
   useEffect(() => {
-    // Wait 5 minutes after app opens, then start the random trigger system
-    const initialDelayTimeout = window.setTimeout(
-      () => {
-        console.log(
-          '🐼 Panda auto-trigger system activated! Starting random visit schedule...',
-        );
-        scheduleNextPandaAutoTrigger();
-      },
-      5 * 60 * 1000,
-    ); // 5 minutes
+    // Schedule the first visit immediately (includes 5-minute startup delay + random interval)
+    console.log(
+      '🐼 Panda auto-trigger system initialized! Scheduling first visit...',
+    );
+    scheduleNextPandaAutoTrigger(true);
 
     // Cleanup on unmount
     return () => {
-      clearTimeout(initialDelayTimeout);
       if (pandaAutoTriggerTimeoutRef.current) {
         clearTimeout(pandaAutoTriggerTimeoutRef.current);
       }
@@ -595,8 +604,8 @@ function App() {
   const handlePandaAnimationComplete = () => {
     setIsPandaAnimationTriggered(false);
     console.log('🐼 Panda animation completed! Scheduling next visit...');
-    // Schedule the next random auto-trigger
-    scheduleNextPandaAutoTrigger();
+    // Schedule the next random auto-trigger (no initial delay for subsequent visits)
+    scheduleNextPandaAutoTrigger(false);
   };
 
   return (
@@ -665,6 +674,7 @@ function App() {
         <DebugInfo
           fillMode={fillMode}
           isFlipped={isFlipped}
+          nextPandaTime={nextPandaTime}
           onPandaTrigger={handlePandaTrigger}
           selectedDeviceId={selectedDeviceId}
           stream={stream}
