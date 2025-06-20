@@ -1,5 +1,5 @@
 import Box from '@mui/joy/Box';
-import React, {useEffect, useState} from 'react';
+import React, {useCallback} from 'react';
 
 import pandaImage from './assets/pandaWithCape.png';
 
@@ -8,97 +8,71 @@ interface PandaWaveAnimationProps {
   onAnimationComplete: () => void;
 }
 
-type AnimationState = 'hidden' | 'entering' | 'waving' | 'exiting';
-
 const PandaWaveAnimation: React.FC<PandaWaveAnimationProps> = ({
   isTriggered,
   onAnimationComplete,
 }) => {
-  const [animationState, setAnimationState] =
-    useState<AnimationState>('hidden');
+  const handleAnimationEnd = useCallback(() => {
+    onAnimationComplete();
+  }, [onAnimationComplete]);
 
-  useEffect(() => {
-    if (!isTriggered) {
-      setAnimationState('hidden');
-      return;
-    }
-
-    // Start the animation sequence
-    setAnimationState('entering');
-
-    // After entering completes (500ms), start waving
-    const enteringTimer = setTimeout(() => {
-      setAnimationState('waving');
-    }, 500);
-
-    // After waving for 2 seconds, start exiting
-    const wavingTimer = setTimeout(() => {
-      setAnimationState('exiting');
-    }, 2500);
-
-    // After exiting completes (500ms), hide and call completion callback
-    const exitingTimer = setTimeout(() => {
-      setAnimationState('hidden');
-      onAnimationComplete();
-    }, 3000);
-
-    return () => {
-      clearTimeout(enteringTimer);
-      clearTimeout(wavingTimer);
-      clearTimeout(exitingTimer);
-    };
-  }, [isTriggered, onAnimationComplete]);
-
-  if (animationState === 'hidden') {
+  if (!isTriggered) {
     return null;
   }
-
-  const getTransform = () => {
-    switch (animationState) {
-      case 'entering':
-        return 'translateX(25%) translateY(-25%) rotate(0deg)';
-      case 'waving':
-        return 'translateX(25%) translateY(-25%) rotate(0deg)';
-      case 'exiting':
-        return 'translateX(100%) translateY(-25%) rotate(0deg)';
-      default:
-        return 'translateX(100%) translateY(0%) rotate(0deg)';
-    }
-  };
-
-  const getAnimation = () => {
-    if (animationState === 'waving') {
-      return 'pandaWave 0.3s ease-in-out infinite alternate';
-    }
-    return 'none';
-  };
 
   return (
     <>
       <style>
         {`
-          @keyframes pandaWave {
-            0% { transform: translateX(25%) translateY(-25%) rotate(-10deg); }
-            100% { transform: translateX(25%) translateY(-25%) rotate(10deg); }
+          @keyframes pandaWaveSequence {
+            /* Start off-screen */
+            0% { 
+              transform: translateX(100%) translateY(-25%) rotate(0deg);
+            }
+            /* Slide in to visible position */
+            12.5% { 
+              transform: translateX(25%) translateY(-25%) rotate(0deg);
+            }
+            /* Start waving */
+            25% { 
+              transform: translateX(25%) translateY(-25%) rotate(-8deg);
+            }
+            37.5% { 
+              transform: translateX(25%) translateY(-25%) rotate(8deg);
+            }
+            50% { 
+              transform: translateX(25%) translateY(-25%) rotate(-8deg);
+            }
+            62.5% { 
+              transform: translateX(25%) translateY(-25%) rotate(8deg);
+            }
+            75% { 
+              transform: translateX(25%) translateY(-25%) rotate(-8deg);
+            }
+            /* Stop waving and prepare to exit */
+            87.5% { 
+              transform: translateX(25%) translateY(-25%) rotate(0deg);
+            }
+            /* Slide out off-screen */
+            100% { 
+              transform: translateX(100%) translateY(-25%) rotate(0deg);
+            }
           }
         `}
       </style>
       <Box
         alt="Waving panda"
         component="img"
+        onAnimationEnd={handleAnimationEnd}
         src={pandaImage}
         sx={{
-          animation: getAnimation(),
+          animation: 'pandaWaveSequence 4s ease-in-out forwards',
           bottom: '20px',
           height: 'auto',
           pointerEvents: 'none',
           position: 'fixed',
           right: '20px',
-          transform: getTransform(),
-          transition:
-            animationState === 'entering' || animationState === 'exiting'
-              ? 'transform 0.5s ease-in-out'
-              : 'none',
+          transform: 'translateX(100%) translateY(-25%) rotate(0deg)', // Start position
           width: '120px',
           zIndex: 1000,
         }}

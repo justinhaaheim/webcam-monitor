@@ -16,7 +16,7 @@ Adding a fun panda animation that appears from the bottom right corner, waves (w
 - [x] Add animation state management to App.tsx
 - [x] Test the animation
 - [x] Check with npm run signal
-- [ ] Commit changes
+- [x] Commit changes ✨
 
 ## Technical Plan
 
@@ -52,6 +52,8 @@ Adding a fun panda animation that appears from the bottom right corner, waves (w
 - ✅ Made "Debug Info" header clickable with hover effect
 - ✅ Updated DebugInfo component interface to accept onPandaTrigger prop
 - ✅ All tests pass - no TypeScript or lint errors
+- 🔧 User feedback: Animation is jerky, panda just appears instead of sliding in
+- 📝 Next: Redesign with CSS keyframes for entire animation sequence
 
 ## Implementation Details
 
@@ -60,3 +62,22 @@ Adding a fun panda animation that appears from the bottom right corner, waves (w
 - Wave animation uses CSS keyframes with rotation (-10deg to +10deg)
 - Click "Debug Info" header in debug menu to trigger animation
 - Uses setTimeout for state transitions and cleanup on unmount
+
+## Redesign Plan (CSS Keyframes)
+
+- Single keyframe animation handling entire sequence
+- Smooth slide-in from right edge
+- Continuous wave motion during middle portion
+- Smooth slide-out to right edge
+- Use animation events for completion callback
+
+## CSS Keyframes Implementation ✅
+
+- Redesigned with single `pandaWaveSequence` keyframe animation (4s total)
+- Timing breakdown:
+  - 0-12.5%: Slide in from off-screen right
+  - 12.5-87.5%: Wave back and forth (5 wave cycles)
+  - 87.5-100%: Slide back out to off-screen right
+- Smooth easing throughout with `ease-in-out`
+- Uses `onAnimationEnd` event for completion callback
+- Much smoother motion than previous state-based approach
