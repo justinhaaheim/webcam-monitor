@@ -192,8 +192,8 @@ function App() {
         );
         setDevices(videoDevices);
 
-        // Set initial selected device if not already set
-        if (videoDevices.length > 0 && !selectedDeviceId) {
+        // Set initial selected device if devices exist and none is selected
+        if (videoDevices.length > 0) {
           // Check local storage for a previously selected device
           const storedDeviceId = localStorage.getItem('selectedVideoDeviceId');
           if (
@@ -204,7 +204,6 @@ function App() {
           } else if (videoDevices[0]?.deviceId) {
             setSelectedDeviceId(videoDevices[0].deviceId);
           }
-          // Note: We don't call updateStream here, as that happens in the selectedDeviceId effect
         }
       } catch (err) {
         console.error(
@@ -216,8 +215,12 @@ function App() {
         );
       }
     };
-    void getDevicesAndPermissions();
-  }, [selectedDeviceId]); // Runs once on mount
+
+    // Only run if we haven't set up devices yet
+    if (devices.length === 0) {
+      void getDevicesAndPermissions();
+    }
+  }, [devices.length]);
 
   // Effect to initialize stream once when selectedDeviceId becomes available
   useEffect(() => {
