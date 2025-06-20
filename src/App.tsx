@@ -4,6 +4,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import ContinuityCameraHelpModal from './ContinuityCameraHelpModal';
 import Controls from './Controls';
 import DebugInfo from './DebugInfo';
+import PandaWaveAnimation from './PandaWaveAnimation';
 
 // Removed import './App.css';
 
@@ -25,6 +26,8 @@ function App() {
     height: number | undefined;
     width: number | undefined;
   }>({height: undefined, width: undefined});
+  const [isPandaAnimationTriggered, setIsPandaAnimationTriggered] =
+    useState<boolean>(false);
   const controlsTimeoutRef = useRef<number | null>(null);
   const appContainerRef = useRef<HTMLDivElement>(null); // Ref for the main container
   const initialStreamAcquiredRef = useRef<boolean>(false); // Track if we've already initialized a stream
@@ -535,6 +538,9 @@ function App() {
     }
   };
   const handleDebugToggle = () => setShowDebugInfo(!showDebugInfo);
+  const handlePandaTrigger = () => setIsPandaAnimationTriggered(true);
+  const handlePandaAnimationComplete = () =>
+    setIsPandaAnimationTriggered(false);
 
   return (
     <Box
@@ -602,6 +608,7 @@ function App() {
         <DebugInfo
           fillMode={fillMode}
           isFlipped={isFlipped}
+          onPandaTrigger={handlePandaTrigger}
           selectedDeviceId={selectedDeviceId}
           stream={stream}
           videoResolution={videoResolution}
@@ -611,6 +618,11 @@ function App() {
       <ContinuityCameraHelpModal
         onClose={handleContinuityCameraHelpClose}
         open={isContinuityCameraHelpOpen}
+      />
+
+      <PandaWaveAnimation
+        isTriggered={isPandaAnimationTriggered}
+        onAnimationComplete={handlePandaAnimationComplete}
       />
     </Box>
   );

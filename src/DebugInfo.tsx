@@ -5,6 +5,7 @@ import React, {useEffect, useState} from 'react';
 interface DebugInfoProps {
   fillMode: 'cover' | 'contain';
   isFlipped: boolean;
+  onPandaTrigger: () => void;
   selectedDeviceId: string | undefined;
   stream: MediaStream | null;
   videoResolution: {height: number | undefined; width: number | undefined};
@@ -14,6 +15,7 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
   stream,
   fillMode,
   isFlipped,
+  onPandaTrigger,
   selectedDeviceId,
   videoResolution,
 }) => {
@@ -88,7 +90,16 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
       }}>
       <Typography
         level="title-md"
-        sx={{color: 'neutral.50', mb: 1.5, textAlign: 'center'}}>
+        onClick={onPandaTrigger}
+        sx={{
+          '&:hover': {
+            color: 'primary.300',
+          },
+          color: 'neutral.50',
+          cursor: 'pointer',
+          mb: 1.5,
+          textAlign: 'center',
+        }}>
         Debug Info
       </Typography>
       {[

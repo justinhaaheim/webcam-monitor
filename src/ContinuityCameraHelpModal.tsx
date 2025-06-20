@@ -84,7 +84,7 @@ const ContinuityCameraHelpModal: React.FC<ContinuityCameraHelpModalProps> = ({
             </Typography>
             <Typography component="li" level="body-sm" sx={{mb: 1}}>
               <strong>
-                Ensure both devices have Bluetooth and WiFi enabled
+                Ensure both your iPhone and Mac have Bluetooth and WiFi enabled
               </strong>{' '}
               and are near each other
             </Typography>
@@ -112,7 +112,9 @@ const ContinuityCameraHelpModal: React.FC<ContinuityCameraHelpModalProps> = ({
               Look for your iPhone under the <strong>Camera</strong> section
             </Typography>
             <Typography component="li" level="body-sm" sx={{mb: 1}}>
-              If you see it, select it to enable it, then check this app again
+              If you see it, select it to enable it, then check this app again.
+              You should see your iPhone as an option. You may need to refresh
+              the page.
             </Typography>
           </Box>
         </Box>
