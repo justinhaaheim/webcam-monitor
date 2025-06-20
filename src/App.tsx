@@ -498,12 +498,15 @@ function App() {
     }
 
     const nextInterval = getRandomPandaInterval();
+    const nextVisitTime = new Date(Date.now() + nextInterval);
+    const minutesFromNow = (nextInterval / 60000).toFixed(1);
+
     console.log(
-      `🐼 Next panda visit scheduled in ${(nextInterval / 60000).toFixed(1)} minutes`,
+      `🐼 Next panda visit scheduled in ${minutesFromNow} minutes (at ${nextVisitTime.toLocaleTimeString()})`,
     );
 
     pandaAutoTriggerTimeoutRef.current = window.setTimeout(() => {
-      console.log('🐼 Auto-triggering panda animation!');
+      console.log('🐼 Auto-triggering panda animation! 🎬');
       setIsPandaAnimationTriggered(true);
     }, nextInterval);
   }, [getRandomPandaInterval]);
@@ -513,7 +516,9 @@ function App() {
     // Wait 5 minutes after app opens, then start the random trigger system
     const initialDelayTimeout = window.setTimeout(
       () => {
-        console.log('🐼 Panda auto-trigger system activated!');
+        console.log(
+          '🐼 Panda auto-trigger system activated! Starting random visit schedule...',
+        );
         scheduleNextPandaAutoTrigger();
       },
       5 * 60 * 1000,
@@ -589,6 +594,7 @@ function App() {
   const handlePandaTrigger = () => setIsPandaAnimationTriggered(true);
   const handlePandaAnimationComplete = () => {
     setIsPandaAnimationTriggered(false);
+    console.log('🐼 Panda animation completed! Scheduling next visit...');
     // Schedule the next random auto-trigger
     scheduleNextPandaAutoTrigger();
   };

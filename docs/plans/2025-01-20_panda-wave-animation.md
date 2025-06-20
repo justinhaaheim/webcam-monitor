@@ -96,7 +96,7 @@ Adding a fun panda animation that appears from the bottom right corner, waves (w
 - **Initial Delay**: 5-minute grace period after app opens
 - **Random Intervals**: Each auto-trigger waits 5-20 minutes (randomized)
 - **Continuous Loop**: After each animation completes, schedules the next random visit
-- **Console Logging**: Logs when system activates and schedules next visit
+- **Enhanced Console Logging**: Detailed logs with timestamps and progress updates
 - **Proper Cleanup**: Clears all timers on component unmount
 - **Manual Override**: Debug menu trigger still works anytime
 - **Smart Timing**: Never interrupts ongoing animations
@@ -108,3 +108,10 @@ Adding a fun panda animation that appears from the bottom right corner, waves (w
 - Random interval: `Math.random() * 15 + 5` minutes
 - Window timeout for cross-browser compatibility
 - Ref-based timer storage to avoid re-renders
+
+### Console Logging Examples
+
+- `🐼 Panda auto-trigger system activated! Starting random visit schedule...`
+- `🐼 Next panda visit scheduled in 12.3 minutes (at 2:45:30 PM)`
+- `🐼 Auto-triggering panda animation! 🎬`
+- `🐼 Panda animation completed! Scheduling next visit...`
