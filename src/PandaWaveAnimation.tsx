@@ -30,27 +30,34 @@ const PandaWaveAnimation: React.FC<PandaWaveAnimationProps> = ({
               transform: translateX(100%) translateY(-25%) rotate(0deg);
             }
             /* Slide in to visible position */
-            12.5% { 
+            9.09% { 
               transform: translateX(25%) translateY(-25%) rotate(0deg);
             }
-            /* Start waving */
-            25% { 
-              transform: translateX(25%) translateY(-25%) rotate(-8deg);
+            /* Wait positioned (2s pause) */
+            45.45% { 
+              transform: translateX(25%) translateY(-25%) rotate(0deg);
             }
-            37.5% { 
-              transform: translateX(25%) translateY(-25%) rotate(8deg);
-            }
+            /* Start waving - faster now */
             50% { 
-              transform: translateX(25%) translateY(-25%) rotate(-8deg);
+              transform: translateX(25%) translateY(-25%) rotate(-10deg);
             }
-            62.5% { 
-              transform: translateX(25%) translateY(-25%) rotate(8deg);
+            54.55% { 
+              transform: translateX(25%) translateY(-25%) rotate(10deg);
             }
-            75% { 
-              transform: translateX(25%) translateY(-25%) rotate(-8deg);
+            59.09% { 
+              transform: translateX(25%) translateY(-25%) rotate(-10deg);
             }
-            /* Stop waving and prepare to exit */
-            87.5% { 
+            63.64% { 
+              transform: translateX(25%) translateY(-25%) rotate(10deg);
+            }
+            68.18% { 
+              transform: translateX(25%) translateY(-25%) rotate(-10deg);
+            }
+            72.73% { 
+              transform: translateX(25%) translateY(-25%) rotate(0deg);
+            }
+            /* Wait after waving (1s pause) */
+            90.91% { 
               transform: translateX(25%) translateY(-25%) rotate(0deg);
             }
             /* Slide out off-screen */
@@ -66,7 +73,7 @@ const PandaWaveAnimation: React.FC<PandaWaveAnimationProps> = ({
         onAnimationEnd={handleAnimationEnd}
         src={pandaImage}
         sx={{
-          animation: 'pandaWaveSequence 4s ease-in-out forwards',
+          animation: 'pandaWaveSequence 5.5s ease-in-out forwards',
           bottom: '20px',
           height: 'auto',
           pointerEvents: 'none',

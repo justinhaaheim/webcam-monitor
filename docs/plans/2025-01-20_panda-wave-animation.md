@@ -73,11 +73,14 @@ Adding a fun panda animation that appears from the bottom right corner, waves (w
 
 ## CSS Keyframes Implementation ✅
 
-- Redesigned with single `pandaWaveSequence` keyframe animation (4s total)
-- Timing breakdown:
-  - 0-12.5%: Slide in from off-screen right
-  - 12.5-87.5%: Wave back and forth (5 wave cycles)
-  - 87.5-100%: Slide back out to off-screen right
+- Redesigned with single `pandaWaveSequence` keyframe animation (5.5s total)
+- Updated timing breakdown per user feedback:
+  - 0-9.09%: Slide in from off-screen right (0.5s)
+  - 9.09-45.45%: Wait positioned and still (2s pause)
+  - 45.45-72.73%: **Faster** waving back and forth (1.5s, 5 wave cycles)
+  - 72.73-90.91%: Wait positioned after waving (1s pause)
+  - 90.91-100%: Slide back out to off-screen right (0.5s)
 - Smooth easing throughout with `ease-in-out`
 - Uses `onAnimationEnd` event for completion callback
 - Much smoother motion than previous state-based approach
+- Added dramatic pauses for better comedic timing 🎭
