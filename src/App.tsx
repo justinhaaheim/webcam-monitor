@@ -362,6 +362,8 @@ function App() {
         );
       };
     }
+
+    return;
   }, [devices.length, selectedDeviceId, updateStream]);
 
   // Effect to initialize stream once when selectedDeviceId becomes available
