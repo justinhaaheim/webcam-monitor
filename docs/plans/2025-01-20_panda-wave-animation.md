@@ -90,3 +90,21 @@ Adding a fun panda animation that appears from the bottom right corner, waves (w
 - More dramatic and eye-catching entrance/exit animations
 - **Nested Box structure**: Panda tilted 30° left for dynamic orientation
 - Separated base rotation from animation transforms for cleaner code
+
+## Auto-Trigger System 🎲 ✅
+
+- **Initial Delay**: 5-minute grace period after app opens
+- **Random Intervals**: Each auto-trigger waits 5-20 minutes (randomized)
+- **Continuous Loop**: After each animation completes, schedules the next random visit
+- **Console Logging**: Logs when system activates and schedules next visit
+- **Proper Cleanup**: Clears all timers on component unmount
+- **Manual Override**: Debug menu trigger still works anytime
+- **Smart Timing**: Never interrupts ongoing animations
+
+### Implementation Details
+
+- Uses `useCallback` for stable function references
+- `useEffect` with cleanup for timer management
+- Random interval: `Math.random() * 15 + 5` minutes
+- Window timeout for cross-browser compatibility
+- Ref-based timer storage to avoid re-renders

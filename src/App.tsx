@@ -28,6 +28,7 @@ function App() {
   }>({height: undefined, width: undefined});
   const [isPandaAnimationTriggered, setIsPandaAnimationTriggered] =
     useState<boolean>(false);
+  const pandaAutoTriggerTimeoutRef = useRef<number | null>(null);
   const controlsTimeoutRef = useRef<number | null>(null);
   const appContainerRef = useRef<HTMLDivElement>(null); // Ref for the main container
   const initialStreamAcquiredRef = useRef<boolean>(false); // Track if we've already initialized a stream
@@ -480,6 +481,53 @@ function App() {
     return;
   }, [stream]);
 
+  // Generate random interval between 5-20 minutes (in milliseconds)
+  const getRandomPandaInterval = useCallback(() => {
+    const minMinutes = 5;
+    const maxMinutes = 20;
+    const randomMinutes =
+      Math.random() * (maxMinutes - minMinutes) + minMinutes;
+    return randomMinutes * 60 * 1000; // Convert to milliseconds
+  }, []);
+
+  // Schedule the next auto-trigger with random timing
+  const scheduleNextPandaAutoTrigger = useCallback(() => {
+    // Clear any existing timeout
+    if (pandaAutoTriggerTimeoutRef.current) {
+      clearTimeout(pandaAutoTriggerTimeoutRef.current);
+    }
+
+    const nextInterval = getRandomPandaInterval();
+    console.log(
+      `🐼 Next panda visit scheduled in ${(nextInterval / 60000).toFixed(1)} minutes`,
+    );
+
+    pandaAutoTriggerTimeoutRef.current = window.setTimeout(() => {
+      console.log('🐼 Auto-triggering panda animation!');
+      setIsPandaAnimationTriggered(true);
+    }, nextInterval);
+  }, [getRandomPandaInterval]);
+
+  // Initialize panda auto-trigger system
+  useEffect(() => {
+    // Wait 5 minutes after app opens, then start the random trigger system
+    const initialDelayTimeout = window.setTimeout(
+      () => {
+        console.log('🐼 Panda auto-trigger system activated!');
+        scheduleNextPandaAutoTrigger();
+      },
+      5 * 60 * 1000,
+    ); // 5 minutes
+
+    // Cleanup on unmount
+    return () => {
+      clearTimeout(initialDelayTimeout);
+      if (pandaAutoTriggerTimeoutRef.current) {
+        clearTimeout(pandaAutoTriggerTimeoutRef.current);
+      }
+    };
+  }, [scheduleNextPandaAutoTrigger]);
+
   if (error && devices.length === 0) {
     return (
       <Box
@@ -539,8 +587,11 @@ function App() {
   };
   const handleDebugToggle = () => setShowDebugInfo(!showDebugInfo);
   const handlePandaTrigger = () => setIsPandaAnimationTriggered(true);
-  const handlePandaAnimationComplete = () =>
+  const handlePandaAnimationComplete = () => {
     setIsPandaAnimationTriggered(false);
+    // Schedule the next random auto-trigger
+    scheduleNextPandaAutoTrigger();
+  };
 
   return (
     <Box
