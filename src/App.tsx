@@ -284,11 +284,93 @@ function App() {
     }
   }, [devices.length]);
 
+  // Dynamic device detection effect - listens for device changes
+  useEffect(() => {
+    const handleDeviceListChange = async () => {
+      console.log('Device change detected, re-enumerating devices');
+      try {
+        const allDevices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = allDevices.filter(
+          (device) => device.kind === 'videoinput',
+        );
+
+        setDevices(videoDevices);
+
+        // Check if currently selected device still exists
+        if (
+          selectedDeviceId &&
+          !videoDevices.some((d) => d.deviceId === selectedDeviceId)
+        ) {
+          console.log(
+            'Currently selected device was removed:',
+            selectedDeviceId,
+          );
+          // Currently selected device was removed
+          if (videoDevices.length > 0) {
+            // Switch to first available device
+            console.log(
+              'Switching to first available device:',
+              videoDevices[0]?.deviceId,
+            );
+            const newDeviceId = videoDevices[0]?.deviceId;
+            if (newDeviceId) {
+              setSelectedDeviceId(newDeviceId);
+              updateStream(newDeviceId).catch((err) => {
+                console.error(
+                  'Error switching to new device after device change:',
+                  err,
+                );
+              });
+            }
+          } else {
+            // No cameras available
+            console.log('No cameras available after device change');
+            setSelectedDeviceId(undefined);
+            if (streamRef.current) {
+              streamRef.current.getTracks().forEach((track) => track.stop());
+              streamRef.current = null;
+              setStream(null);
+            }
+            setError(
+              'No cameras are currently available. Please connect a camera.',
+            );
+          }
+        }
+      } catch (err) {
+        console.error('Error re-enumerating devices after device change:', err);
+        setError('Error detecting camera changes. Please refresh the page.');
+      }
+    };
+
+    // Only add listener after initial device enumeration
+    if (devices.length > 0) {
+      const deviceChangeHandler = () => {
+        handleDeviceListChange().catch((err) => {
+          console.error('Error in device change handler:', err);
+        });
+      };
+
+      navigator.mediaDevices.addEventListener(
+        'devicechange',
+        deviceChangeHandler,
+      );
+
+      return () => {
+        navigator.mediaDevices.removeEventListener(
+          'devicechange',
+          deviceChangeHandler,
+        );
+      };
+    }
+  }, [devices.length, selectedDeviceId, updateStream]);
+
   // Effect to initialize stream once when selectedDeviceId becomes available
   useEffect(() => {
     if (selectedDeviceId && !initialStreamAcquiredRef.current) {
       initialStreamAcquiredRef.current = true;
-      void updateStream(selectedDeviceId);
+      updateStream(selectedDeviceId).catch((err) => {
+        console.error('Error initializing stream:', err);
+      });
     }
   }, [selectedDeviceId, updateStream]);
 
