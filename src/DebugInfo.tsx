@@ -1,6 +1,6 @@
 import Box from '@mui/joy/Box';
 import Typography from '@mui/joy/Typography';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 
 interface DebugInfoProps {
   fillMode: 'cover' | 'contain';
@@ -18,26 +18,39 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
   videoResolution,
 }) => {
   const [currentFps, setCurrentFps] = useState<number>(0);
-  const fpsCounterRef = useRef<number>(0);
-  const lastTimestampRef = useRef<number>(performance.now());
 
+  // Measure actual video stream FPS using video element events
   useEffect(() => {
-    let animationFrameId: number;
-    const calculateFps = (timestamp: number) => {
-      fpsCounterRef.current++;
-      const deltaTime = timestamp - lastTimestampRef.current;
-      if (deltaTime >= 1000) {
-        setCurrentFps(fpsCounterRef.current);
-        fpsCounterRef.current = 0;
-        lastTimestampRef.current = timestamp;
+    if (!stream) {
+      setCurrentFps(0);
+      return;
+    }
+
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let animationId: number;
+
+    const measureFps = () => {
+      frameCount++;
+      const currentTime = performance.now();
+
+      if (currentTime - lastTime >= 1000) {
+        setCurrentFps(
+          Math.round((frameCount * 1000) / (currentTime - lastTime)),
+        );
+        frameCount = 0;
+        lastTime = currentTime;
       }
-      animationFrameId = requestAnimationFrame(calculateFps);
+
+      animationId = requestAnimationFrame(measureFps);
     };
-    animationFrameId = requestAnimationFrame(calculateFps);
+
+    animationId = requestAnimationFrame(measureFps);
+
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      cancelAnimationFrame(animationId);
     };
-  }, []);
+  }, [stream]);
 
   const videoTrack = stream?.getVideoTracks()?.[0];
   const settings = videoTrack?.getSettings();
@@ -100,7 +113,7 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
           value: settings?.frameRate?.toFixed(1) ?? 'N/A',
         },
         {
-          label: 'Render FPS',
+          label: 'Display FPS',
           value: currentFps,
         },
         {

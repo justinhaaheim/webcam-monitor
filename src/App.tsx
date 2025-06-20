@@ -30,13 +30,16 @@ function App() {
   const HIDE_CONTROLS_DELAY = 10000;
 
   // Central function to update stream based on a device ID
+  const streamRef = useRef<MediaStream | null>(null);
+
   const updateStream = useCallback(
     async (deviceId?: string) => {
       // First stop any existing stream
-      if (stream) {
+      if (streamRef.current) {
         console.log('Stopping tracks on existing stream');
-        stream.getTracks().forEach((track) => track.stop());
-        setStream(null); // Clear the stream state immediately after stopping
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        setStream(null);
       }
 
       // If no deviceId is provided, just leave the stream as null
@@ -47,17 +50,19 @@ function App() {
 
       try {
         console.log(`Requesting media for deviceId: ${deviceId}`);
+
+        // First check device capabilities
+        const allDevices = await navigator.mediaDevices.enumerateDevices();
+        const device = allDevices.find((d) => d.deviceId === deviceId);
+        console.log('Selected device:', device);
+
         const constraints: MediaStreamConstraints = {
           audio: false,
           video: {
             deviceId: {exact: deviceId},
-
-            // Request HD, allow fallback
             frameRate: {ideal: 60, min: 30},
-
-            // Request HD, allow fallback
             height: {ideal: 1080, min: 720},
-            width: {ideal: 1920, min: 1280}, // Request high frame rate, allow fallback
+            width: {ideal: 1920, min: 1280},
           },
         };
 
@@ -86,7 +91,8 @@ function App() {
           console.log('No video tracks found on the new stream.');
         }
 
-        // Set the new stream to state
+        // Set the new stream to state and ref
+        streamRef.current = newStream;
         setStream(newStream);
         setError(null);
 
@@ -94,13 +100,15 @@ function App() {
         localStorage.setItem('selectedVideoDeviceId', deviceId);
       } catch (err) {
         console.error(`Error accessing webcam for deviceId: ${deviceId}`, err);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error('Full error object:', err);
         setError(
-          `Error accessing camera: ${err instanceof Error ? err.message : String(err)}. It might not support the requested resolution/framerate or is in use.`,
+          `Error accessing camera: ${errorMessage || 'Unknown error'}. It might not support the requested resolution/framerate or is in use.`,
         );
         // Ensure stream is cleared on error (already set to null above)
       }
     },
-    [stream], // stream is needed because we read its value
+    [], // No dependencies needed since we use ref
   );
 
   // Event handler for device change - called by dropdown
@@ -222,12 +230,12 @@ function App() {
   // Effect to cleanup stream on unmount
   useEffect(() => {
     return () => {
-      if (stream) {
+      if (streamRef.current) {
         console.log('Component unmounting, stopping all tracks');
-        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [stream]); // Only depend on stream to get latest reference
+  }, []); // No dependencies needed since we use ref
 
   // Video metadata effect - this is fine as is
   useEffect(() => {
