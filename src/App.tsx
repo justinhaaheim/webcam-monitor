@@ -26,11 +26,56 @@ function App() {
   const appContainerRef = useRef<HTMLDivElement>(null); // Ref for the main container
   const initialStreamAcquiredRef = useRef<boolean>(false); // Track if we've already initialized a stream
   const videoRef = useRef<HTMLVideoElement>(null);
+  const previousDevicesRef = useRef<MediaDeviceInfo[]>([]); // Track previous device list for change detection
 
   const HIDE_CONTROLS_DELAY = 10000;
 
   // Central function to update stream based on a device ID
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Helper function to format device data for console.table
+  const formatDevicesForTable = useCallback((deviceList: MediaDeviceInfo[]) => {
+    return deviceList.map((device, index) => ({
+      DeviceId: device.deviceId.slice(0, 20) + '...',
+      // Truncate for readability
+      GroupId: device.groupId?.slice(0, 20) + '...' || 'N/A',
+
+      Index: index,
+      Label: device.label || `Camera ${index + 1}`,
+    }));
+  }, []);
+
+  // Helper function to detect and log device changes
+  const logDeviceChanges = useCallback(
+    (oldDevices: MediaDeviceInfo[], newDevices: MediaDeviceInfo[]) => {
+      const oldDeviceIds = new Set(oldDevices.map((d) => d.deviceId));
+      const newDeviceIds = new Set(newDevices.map((d) => d.deviceId));
+
+      const addedDevices = newDevices.filter(
+        (d) => !oldDeviceIds.has(d.deviceId),
+      );
+      const removedDevices = oldDevices.filter(
+        (d) => !newDeviceIds.has(d.deviceId),
+      );
+
+      if (addedDevices.length > 0) {
+        console.log('📹 New cameras detected:');
+        console.table(formatDevicesForTable(addedDevices));
+      }
+
+      if (removedDevices.length > 0) {
+        console.log('❌ Cameras removed:');
+        console.table(formatDevicesForTable(removedDevices));
+      }
+
+      if (addedDevices.length === 0 && removedDevices.length === 0) {
+        console.log(
+          '🔄 Device change event detected but no camera changes found',
+        );
+      }
+    },
+    [formatDevicesForTable],
+  );
 
   const updateStream = useCallback(
     async (deviceId?: string) => {
@@ -131,26 +176,36 @@ function App() {
           throw lastError ?? new Error('Failed to get media stream');
         }
 
-        // Log capabilities and settings
+        // Log capabilities and settings with better formatting
         const videoTracks = newStream.getVideoTracks();
         if (videoTracks.length > 0) {
           const firstTrack = videoTracks[0];
           if (firstTrack) {
             const capabilities = firstTrack.getCapabilities();
-            console.log(
-              'Video track capabilities:',
-              JSON.stringify(capabilities, null, 2),
-            );
-            const allTrackSettings = videoTracks.map((track) =>
-              track.getSettings(),
-            );
-            console.log(
-              'Actual video track settings (all tracks):',
-              JSON.stringify(allTrackSettings, null, 2),
-            );
+            console.log('📋 Video track capabilities:');
+            console.table({
+              'Aspect Ratio': `${capabilities.aspectRatio?.min ?? 'N/A'} - ${capabilities.aspectRatio?.max ?? 'N/A'}`,
+              'Facing Mode': capabilities.facingMode?.join(', ') ?? 'N/A',
+              'Frame Rate': `${capabilities.frameRate?.min ?? 'N/A'} - ${capabilities.frameRate?.max ?? 'N/A'} fps`,
+              Height: `${capabilities.height?.min ?? 'N/A'} - ${capabilities.height?.max ?? 'N/A'} px`,
+              Width: `${capabilities.width?.min ?? 'N/A'} - ${capabilities.width?.max ?? 'N/A'} px`,
+            });
+
+            const trackSettings = firstTrack.getSettings();
+            console.log('⚙️ Active track settings:');
+            console.table({
+              'Aspect Ratio': trackSettings.aspectRatio ?? 'N/A',
+              'Device ID': trackSettings.deviceId
+                ? trackSettings.deviceId.slice(0, 20) + '...'
+                : 'N/A',
+              'Facing Mode': trackSettings.facingMode ?? 'N/A',
+              'Frame Rate': `${trackSettings.frameRate ?? 'N/A'} fps`,
+              Height: `${trackSettings.height ?? 'N/A'} px`,
+              Width: `${trackSettings.width ?? 'N/A'} px`,
+            });
           }
         } else {
-          console.log('No video tracks found on the new stream.');
+          console.log('❌ No video tracks found on the new stream.');
         }
 
         // Set the new stream to state and ref
@@ -248,11 +303,15 @@ function App() {
 
         // Enumerate devices
         const allDevices = await navigator.mediaDevices.enumerateDevices();
-        console.log('All devices:', allDevices);
         const videoDevices = allDevices.filter(
           (device) => device.kind === 'videoinput',
         );
+
+        console.log('📹 Initial camera enumeration:');
+        console.table(formatDevicesForTable(videoDevices));
+
         setDevices(videoDevices);
+        previousDevicesRef.current = videoDevices;
 
         // Set initial selected device if devices exist and none is selected
         if (videoDevices.length > 0) {
@@ -282,19 +341,24 @@ function App() {
     if (devices.length === 0) {
       void getDevicesAndPermissions();
     }
-  }, [devices.length]);
+  }, [devices.length, formatDevicesForTable]);
 
   // Dynamic device detection effect - listens for device changes
   useEffect(() => {
     const handleDeviceListChange = async () => {
-      console.log('Device change detected, re-enumerating devices');
+      console.log('🔄 Device change detected, re-enumerating devices');
       try {
         const allDevices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = allDevices.filter(
           (device) => device.kind === 'videoinput',
         );
 
+        // Log exactly what changed
+        logDeviceChanges(previousDevicesRef.current, videoDevices);
+
+        // Update current device list and tracking
         setDevices(videoDevices);
+        previousDevicesRef.current = videoDevices;
 
         // Check if currently selected device still exists
         if (
@@ -364,7 +428,7 @@ function App() {
     }
 
     return;
-  }, [devices.length, selectedDeviceId, updateStream]);
+  }, [devices.length, selectedDeviceId, updateStream, logDeviceChanges]);
 
   // Effect to initialize stream once when selectedDeviceId becomes available
   useEffect(() => {
