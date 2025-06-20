@@ -80,7 +80,7 @@ const PandaWaveAnimation: React.FC<PandaWaveAnimationProps> = ({
         onAnimationEnd={handleAnimationEnd}
         sx={{
           animation: 'pandaWaveSequence 5.5s ease-in-out forwards',
-          bottom: '20px',
+          bottom: '-40px',
           height: 'auto',
           pointerEvents: 'none',
           position: 'fixed',
