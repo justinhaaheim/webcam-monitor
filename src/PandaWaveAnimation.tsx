@@ -77,10 +77,7 @@ const PandaWaveAnimation: React.FC<PandaWaveAnimationProps> = ({
         `}
       </style>
       <Box
-        alt="Waving panda"
-        component="img"
         onAnimationEnd={handleAnimationEnd}
-        src={pandaImage}
         sx={{
           animation: 'pandaWaveSequence 5.5s ease-in-out forwards',
           bottom: '20px',
@@ -91,8 +88,18 @@ const PandaWaveAnimation: React.FC<PandaWaveAnimationProps> = ({
           transform: 'translateX(150%) translateY(50%) rotate(0deg)', // Start position
           width: '120px',
           zIndex: 1000,
-        }}
-      />
+        }}>
+        <Box
+          alt="Waving panda"
+          component="img"
+          src={pandaImage}
+          sx={{
+            height: 'auto',
+            transform: 'rotate(-30deg)', // Tilt panda 30 degrees to the left
+            width: '100%',
+          }}
+        />
+      </Box>
     </>
   );
 };

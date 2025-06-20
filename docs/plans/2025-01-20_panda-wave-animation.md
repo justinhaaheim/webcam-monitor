@@ -88,3 +88,5 @@ Adding a fun panda animation that appears from the bottom right corner, waves (w
 - Enhanced motion: Swoops in diagonally from bottom-right corner
 - Increased wave intensity: 8 cycles in 1.1s (was 5 cycles in 1.5s)
 - More dramatic and eye-catching entrance/exit animations
+- **Nested Box structure**: Panda tilted 30° left for dynamic orientation
+- Separated base rotation from animation transforms for cleaner code
