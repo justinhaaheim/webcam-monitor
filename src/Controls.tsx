@@ -1,22 +1,13 @@
-import {Brightness4, Brightness7} from '@mui/icons-material';
 import AspectRatioOutlined from '@mui/icons-material/AspectRatioOutlined';
 import BugReportOutlined from '@mui/icons-material/BugReportOutlined';
-import CameraIcon from '@mui/icons-material/Camera';
 import CompareArrowsOutlined from '@mui/icons-material/CompareArrowsOutlined';
-import FitScreenIcon from '@mui/icons-material/FitScreen';
-import FlipCameraAndroidIcon from '@mui/icons-material/FlipCameraAndroid';
-import FullscreenIcon from '@mui/icons-material/Fullscreen';
-import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import FullscreenExitOutlined from '@mui/icons-material/FullscreenExitOutlined';
 import FullscreenOutlined from '@mui/icons-material/FullscreenOutlined';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import HelpOutlineOutlined from '@mui/icons-material/HelpOutlineOutlined';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import SettingsIcon from '@mui/icons-material/Settings';
 import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
 import FormControl from '@mui/joy/FormControl';
-import IconButton from '@mui/joy/IconButton';
 import Option from '@mui/joy/Option';
 import Select from '@mui/joy/Select';
 import React from 'react';
@@ -148,7 +139,7 @@ const Controls: React.FC<ControlsProps> = ({
             }}
             value={HELP_OPTION_VALUE}>
             <Box sx={{alignItems: 'center', display: 'flex', gap: 1}}>
-              <HelpOutlineIcon fontSize="small" />
+              <HelpOutlineOutlined />
               Looking for your iPhone continuity camera?
             </Box>
           </Option>
@@ -161,7 +152,7 @@ const Controls: React.FC<ControlsProps> = ({
         sx={iconButtonStyles}
         title={isFlipped ? 'Unflip Video' : 'Flip Video Horizontally'}
         variant="soft">
-        <FlipCameraAndroidIcon />
+        <CompareArrowsOutlined />
       </Button>
 
       <Button
@@ -170,7 +161,7 @@ const Controls: React.FC<ControlsProps> = ({
         sx={iconButtonStyles}
         title={fillMode === 'cover' ? 'Contain Video' : 'Fill Container'}
         variant="soft">
-        <FitScreenIcon />
+        <AspectRatioOutlined />
       </Button>
 
       <Button
@@ -179,7 +170,7 @@ const Controls: React.FC<ControlsProps> = ({
         sx={iconButtonStyles}
         title={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
         variant="soft">
-        {isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+        {isFullScreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
       </Button>
 
       <Box sx={{alignItems: 'center', display: 'flex', gap: 2}}>
