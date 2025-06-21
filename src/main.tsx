@@ -15,7 +15,7 @@ console.log('App Version:', packageJson.version);
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <CssVarsProvider defaultMode="light">
+    <CssVarsProvider defaultMode="dark">
       <CssBaseline />
       <ErrorBoundary
         fallback={(error, moduleName) => (
