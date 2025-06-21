@@ -5,6 +5,7 @@ import ContinuityCameraHelpModal from './ContinuityCameraHelpModal';
 import Controls from './Controls';
 import DebugInfo from './DebugInfo';
 import PandaWaveAnimation from './PandaWaveAnimation';
+import PhysicsPanda, {type PhysicsPandaConfig} from './PhysicsPanda';
 
 // Removed import './App.css';
 
@@ -29,7 +30,22 @@ function App() {
   const [isPandaAnimationTriggered, setIsPandaAnimationTriggered] =
     useState<boolean>(false);
   const [nextPandaTime, setNextPandaTime] = useState<number | null>(null);
+  const [nextPhysicsPandaTime, setNextPhysicsPandaTime] = useState<
+    number | null
+  >(null);
+  const [physicsPandas, setPhysicsPandas] = useState<
+    {config: PhysicsPandaConfig; id: number}[]
+  >([]);
+  const [physicsPandaConfig, setPhysicsPandaConfig] =
+    useState<PhysicsPandaConfig>({
+      bounceDamping: 0.85,
+      durationOnScreen: {max: 8000, min: 5000},
+      entranceAngle: {max: 135, min: 45},
+      entranceSpeed: {max: 15, min: 10},
+      gravity: 0.4,
+    });
   const pandaAutoTriggerTimeoutRef = useRef<number | null>(null);
+  const physicsPandaAutoTriggerTimeoutRef = useRef<number | null>(null);
   const controlsTimeoutRef = useRef<number | null>(null);
   const appContainerRef = useRef<HTMLDivElement>(null); // Ref for the main container
   const initialStreamAcquiredRef = useRef<boolean>(false); // Track if we've already initialized a stream
@@ -491,6 +507,15 @@ function App() {
     return randomMinutes * 60 * 1000; // Convert to milliseconds
   }, []);
 
+  // Exactly the same logic, but for the physics panda, so we can have separate timers
+  const getRandomPhysicsPandaInterval = useCallback(() => {
+    const minMinutes = 5;
+    const maxMinutes = 20;
+    const randomMinutes =
+      Math.random() * (maxMinutes - minMinutes) + minMinutes;
+    return randomMinutes * 60 * 1000;
+  }, []);
+
   // Generate initial interval including 5-minute startup delay
   const getInitialPandaInterval = useCallback(() => {
     const startupDelay = 5 * 60 * 1000; // 5 minutes
@@ -526,6 +551,39 @@ function App() {
     [getRandomPandaInterval, getInitialPandaInterval],
   );
 
+  // Schedule the next physics panda auto-trigger
+  const scheduleNextPhysicsPandaAutoTrigger = useCallback(
+    (useInitialDelay = false) => {
+      if (physicsPandaAutoTriggerTimeoutRef.current) {
+        clearTimeout(physicsPandaAutoTriggerTimeoutRef.current);
+      }
+
+      const nextInterval = useInitialDelay
+        ? getInitialPandaInterval() // Reuse initial delay logic
+        : getRandomPhysicsPandaInterval();
+      const nextVisitTime = Date.now() + nextInterval;
+      const minutesFromNow = (nextInterval / 60000).toFixed(1);
+
+      setNextPhysicsPandaTime(nextVisitTime);
+      console.log(
+        `🤸 Physics panda visit scheduled in ${minutesFromNow} minutes (at ${new Date(nextVisitTime).toLocaleTimeString()})`,
+      );
+
+      physicsPandaAutoTriggerTimeoutRef.current = window.setTimeout(() => {
+        console.log('🤸 Auto-triggering physics panda! 🎬');
+        setPhysicsPandas((pandas) => [
+          ...pandas,
+          {config: physicsPandaConfig, id: Date.now()},
+        ]);
+      }, nextInterval);
+    },
+    [
+      getInitialPandaInterval,
+      getRandomPhysicsPandaInterval,
+      physicsPandaConfig,
+    ],
+  );
+
   // Initialize panda auto-trigger system
   useEffect(() => {
     // Schedule the first visit immediately (includes 5-minute startup delay + random interval)
@@ -541,6 +599,21 @@ function App() {
       }
     };
   }, [scheduleNextPandaAutoTrigger]);
+
+  // Initialize physics panda auto-trigger system
+  useEffect(() => {
+    console.log(
+      '🤸 Physics panda auto-trigger system initialized! Scheduling first visit...',
+    );
+    scheduleNextPhysicsPandaAutoTrigger(true);
+
+    // Cleanup on unmount
+    return () => {
+      if (physicsPandaAutoTriggerTimeoutRef.current) {
+        clearTimeout(physicsPandaAutoTriggerTimeoutRef.current);
+      }
+    };
+  }, [scheduleNextPhysicsPandaAutoTrigger]);
 
   if (error && devices.length === 0) {
     return (
@@ -608,6 +681,23 @@ function App() {
     scheduleNextPandaAutoTrigger(false);
   };
 
+  const handlePhysicsPandaTrigger = () => {
+    setPhysicsPandas((pandas) => [
+      ...pandas,
+      {config: physicsPandaConfig, id: Date.now()},
+    ]);
+  };
+  const handlePhysicsConfigChange = (
+    newConfig: Partial<PhysicsPandaConfig>,
+  ) => {
+    setPhysicsPandaConfig((prevConfig) => ({...prevConfig, ...newConfig}));
+  };
+
+  const handlePhysicsPandaComplete = (id: number) => {
+    setPhysicsPandas((pandas) => pandas.filter((p) => p.id !== id));
+    console.log(`🤸 Physics panda ${id} animation completed!`);
+  };
+
   return (
     <Box
       ref={appContainerRef} // Added ref for event listeners and fullscreen
@@ -666,6 +756,7 @@ function App() {
         onFillModeToggle={handleFillModeToggle}
         onFlipToggle={handleFlipToggle}
         onFullscreen={handleFullscreen}
+        onPhysicsPandaTrigger={handlePhysicsPandaTrigger}
         selectedDeviceId={selectedDeviceId}
         showDebugInfo={showDebugInfo}
       />
@@ -675,7 +766,11 @@ function App() {
           fillMode={fillMode}
           isFlipped={isFlipped}
           nextPandaTime={nextPandaTime}
+          nextPhysicsPandaTime={nextPhysicsPandaTime}
           onPandaTrigger={handlePandaTrigger}
+          onPhysicsConfigChange={handlePhysicsConfigChange}
+          onPhysicsPandaTrigger={handlePhysicsPandaTrigger}
+          physicsPandaConfig={physicsPandaConfig}
           selectedDeviceId={selectedDeviceId}
           stream={stream}
           videoResolution={videoResolution}
@@ -691,6 +786,14 @@ function App() {
         isTriggered={isPandaAnimationTriggered}
         onAnimationComplete={handlePandaAnimationComplete}
       />
+      {physicsPandas.map((panda) => (
+        <PhysicsPanda
+          config={panda.config}
+          id={panda.id}
+          key={panda.id}
+          onAnimationComplete={handlePhysicsPandaComplete}
+        />
+      ))}
     </Box>
   );
 }

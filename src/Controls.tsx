@@ -1,15 +1,27 @@
+import {Brightness4, Brightness7} from '@mui/icons-material';
 import AspectRatioOutlined from '@mui/icons-material/AspectRatioOutlined';
 import BugReportOutlined from '@mui/icons-material/BugReportOutlined';
+import CameraIcon from '@mui/icons-material/Camera';
 import CompareArrowsOutlined from '@mui/icons-material/CompareArrowsOutlined';
+import FitScreenIcon from '@mui/icons-material/FitScreen';
+import FlipCameraAndroidIcon from '@mui/icons-material/FlipCameraAndroid';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import FullscreenExitOutlined from '@mui/icons-material/FullscreenExitOutlined';
 import FullscreenOutlined from '@mui/icons-material/FullscreenOutlined';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import HelpOutlineOutlined from '@mui/icons-material/HelpOutlineOutlined';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import SettingsIcon from '@mui/icons-material/Settings';
 import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
 import FormControl from '@mui/joy/FormControl';
+import IconButton from '@mui/joy/IconButton';
 import Option from '@mui/joy/Option';
 import Select from '@mui/joy/Select';
 import React from 'react';
+
+import ColorSchemeToggle from './ColorSchemeToggle';
 
 interface ControlsProps {
   devices: MediaDeviceInfo[];
@@ -23,6 +35,7 @@ interface ControlsProps {
   onFillModeToggle: () => void;
   onFlipToggle: () => void;
   onFullscreen: () => void;
+  onPhysicsPandaTrigger: () => void;
   selectedDeviceId: string | undefined;
   showDebugInfo: boolean;
 }
@@ -40,6 +53,7 @@ const Controls: React.FC<ControlsProps> = ({
   isVisible,
   onDebugToggle,
   onContinuityCameraHelpOpen,
+  onPhysicsPandaTrigger,
 }) => {
   // Always render but control visibility with CSS for smooth animations
   // if (!isVisible) {
@@ -134,7 +148,7 @@ const Controls: React.FC<ControlsProps> = ({
             }}
             value={HELP_OPTION_VALUE}>
             <Box sx={{alignItems: 'center', display: 'flex', gap: 1}}>
-              <HelpOutlineOutlined fontSize="small" />
+              <HelpOutlineIcon fontSize="small" />
               Looking for your iPhone continuity camera?
             </Box>
           </Option>
@@ -147,7 +161,7 @@ const Controls: React.FC<ControlsProps> = ({
         sx={iconButtonStyles}
         title={isFlipped ? 'Unflip Video' : 'Flip Video Horizontally'}
         variant="soft">
-        <CompareArrowsOutlined />
+        <FlipCameraAndroidIcon />
       </Button>
 
       <Button
@@ -156,7 +170,7 @@ const Controls: React.FC<ControlsProps> = ({
         sx={iconButtonStyles}
         title={fillMode === 'cover' ? 'Contain Video' : 'Fill Container'}
         variant="soft">
-        <AspectRatioOutlined />
+        <FitScreenIcon />
       </Button>
 
       <Button
@@ -165,17 +179,28 @@ const Controls: React.FC<ControlsProps> = ({
         sx={iconButtonStyles}
         title={isFullScreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
         variant="soft">
-        {isFullScreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+        {isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
       </Button>
 
-      <Button
-        color="neutral"
-        onClick={onDebugToggle}
-        sx={{...iconButtonStyles, marginLeft: 'auto'}}
-        title="Toggle Debug Information"
-        variant="soft">
-        <BugReportOutlined />
-      </Button>
+      <Box sx={{alignItems: 'center', display: 'flex', gap: 2}}>
+        <Button
+          color="neutral"
+          onClick={onPhysicsPandaTrigger}
+          sx={iconButtonStyles}
+          title="Trigger Physics Panda"
+          variant="soft">
+          <RocketLaunchIcon />
+        </Button>
+        <Button
+          color="neutral"
+          onClick={onDebugToggle}
+          sx={iconButtonStyles}
+          title="Toggle Debug Information"
+          variant="soft">
+          <BugReportOutlined />
+        </Button>
+        <ColorSchemeToggle />
+      </Box>
     </Box>
   );
 };

@@ -1,12 +1,19 @@
 import Box from '@mui/joy/Box';
+import Input from '@mui/joy/Input';
 import Typography from '@mui/joy/Typography';
 import React, {useEffect, useState} from 'react';
+
+import {type PhysicsPandaConfig} from './PhysicsPanda';
 
 interface DebugInfoProps {
   fillMode: 'cover' | 'contain';
   isFlipped: boolean;
   nextPandaTime: number | null;
+  nextPhysicsPandaTime: number | null;
   onPandaTrigger: () => void;
+  onPhysicsConfigChange: (newConfig: Partial<PhysicsPandaConfig>) => void;
+  onPhysicsPandaTrigger: () => void;
+  physicsPandaConfig: PhysicsPandaConfig;
   selectedDeviceId: string | undefined;
   stream: MediaStream | null;
   videoResolution: {height: number | undefined; width: number | undefined};
@@ -17,12 +24,18 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
   fillMode,
   isFlipped,
   nextPandaTime,
+  nextPhysicsPandaTime,
   onPandaTrigger,
+  onPhysicsConfigChange,
+  onPhysicsPandaTrigger,
+  physicsPandaConfig,
   selectedDeviceId,
   videoResolution,
 }) => {
   const [currentFps, setCurrentFps] = useState<number>(0);
-  const [countdown, setCountdown] = useState<string>('--:--');
+  const [wavePandaCountdown, setWavePandaCountdown] = useState<string>('--:--');
+  const [physicsPandaCountdown, setPhysicsPandaCountdown] =
+    useState<string>('--:--');
 
   // Measure actual video stream FPS using video element events
   useEffect(() => {
@@ -57,32 +70,52 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
     };
   }, [stream]);
 
-  // Update countdown timer
+  // Update countdown timers
   useEffect(() => {
-    if (!nextPandaTime) {
-      setCountdown('--:--');
-      return;
-    }
-
-    const updateCountdown = () => {
-      const now = Date.now();
-      const timeRemaining = nextPandaTime - now;
-
-      if (timeRemaining <= 0) {
-        setCountdown('00:00');
-        return;
+    const createCountdownUpdater = (
+      nextTime: number | null,
+      setter: React.Dispatch<React.SetStateAction<string>>,
+    ) => {
+      if (!nextTime) {
+        setter('--:--');
+        return () => {
+          /* no-op */
+        };
       }
 
-      const minutes = Math.floor(timeRemaining / 60000);
-      const seconds = Math.floor((timeRemaining % 60000) / 1000);
-      setCountdown(`${minutes}m${seconds.toString().padStart(2, '0')}s`);
+      const update = () => {
+        const now = Date.now();
+        const timeRemaining = nextTime - now;
+
+        if (timeRemaining <= 0) {
+          setter('00:00');
+          return;
+        }
+
+        const minutes = Math.floor(timeRemaining / 60000);
+        const seconds = Math.floor((timeRemaining % 60000) / 1000);
+        setter(`${minutes}m${seconds.toString().padStart(2, '0')}s`);
+      };
+
+      update();
+      const interval = setInterval(update, 1000);
+      return () => clearInterval(interval);
     };
 
-    updateCountdown(); // Initial update
-    const interval = setInterval(updateCountdown, 1000);
+    const waveCleanup = createCountdownUpdater(
+      nextPandaTime,
+      setWavePandaCountdown,
+    );
+    const physicsCleanup = createCountdownUpdater(
+      nextPhysicsPandaTime,
+      setPhysicsPandaCountdown,
+    );
 
-    return () => clearInterval(interval);
-  }, [nextPandaTime]);
+    return () => {
+      waveCleanup();
+      physicsCleanup();
+    };
+  }, [nextPandaTime, nextPhysicsPandaTime]);
 
   const videoTrack = stream?.getVideoTracks()?.[0];
   const settings = videoTrack?.getSettings();
@@ -97,6 +130,30 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
   const labelStyles = {
     color: 'text.tertiary',
     fontSize: '0.8rem',
+  };
+
+  const handleConfigChange = (key: keyof PhysicsPandaConfig, value: string) => {
+    const numericValue = parseFloat(value);
+    if (!isNaN(numericValue)) {
+      onPhysicsConfigChange({[key]: numericValue});
+    }
+  };
+
+  const handleRangeConfigChange = (
+    key: keyof PhysicsPandaConfig,
+    subKey: 'min' | 'max',
+    value: string,
+  ) => {
+    const numericValue = parseFloat(value);
+    if (!isNaN(numericValue)) {
+      const existingRange = physicsPandaConfig[key] as {
+        max: number;
+        min: number;
+      };
+      onPhysicsConfigChange({
+        [key]: {...existingRange, [subKey]: numericValue},
+      });
+    }
   };
 
   return (
@@ -166,8 +223,12 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
           value: isFlipped.toString(),
         },
         {
-          label: 'Countdown',
-          value: countdown,
+          label: 'Wave Countdown',
+          value: wavePandaCountdown,
+        },
+        {
+          label: 'Physics Countdown',
+          value: physicsPandaCountdown,
         },
       ].map((item) => (
         <Box
@@ -185,6 +246,130 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
           <Typography component="span" sx={valueStyles}>
             {item.value}
           </Typography>
+        </Box>
+      ))}
+
+      <Typography
+        level="title-md"
+        onClick={onPhysicsPandaTrigger}
+        sx={{
+          '&:hover': {
+            color: 'primary.300',
+          },
+          borderColor: 'neutral.700',
+          borderTop: '1px solid',
+          color: 'neutral.50',
+          cursor: 'pointer',
+          mb: 1.5,
+          mt: 1.5,
+          pt: 1.5,
+          textAlign: 'center',
+        }}>
+        Physics Panda
+      </Typography>
+
+      {[
+        {
+          label: 'Gravity',
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+            handleConfigChange('gravity', e.target.value),
+          value: physicsPandaConfig.gravity,
+        },
+        {
+          label: 'Bounce Damping',
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+            handleConfigChange('bounceDamping', e.target.value),
+          value: physicsPandaConfig.bounceDamping,
+        },
+      ].map(({label, value, onChange}) => (
+        <Box
+          key={label}
+          sx={{
+            alignItems: 'center',
+            display: 'flex',
+            justifyContent: 'space-between',
+            py: 0.5,
+          }}>
+          <Typography component="span" sx={labelStyles}>
+            {label}:
+          </Typography>
+          <Input
+            onChange={onChange}
+            size="sm"
+            sx={{width: '80px'}}
+            type="number"
+            value={value}
+          />
+        </Box>
+      ))}
+
+      {[
+        {
+          key: 'entranceSpeed',
+          label: 'Entrance Speed',
+        },
+        {
+          key: 'entranceAngle',
+          label: 'Entrance Angle',
+        },
+        {
+          key: 'durationOnScreen',
+          label: 'Duration (ms)',
+        },
+      ].map(({label, key}) => (
+        <Box
+          key={label}
+          sx={{
+            alignItems: 'center',
+            display: 'flex',
+            justifyContent: 'space-between',
+            py: 0.5,
+          }}>
+          <Typography component="span" sx={labelStyles}>
+            {label}:
+          </Typography>
+          <Box sx={{display: 'flex', gap: 1}}>
+            <Input
+              onChange={(e) =>
+                handleRangeConfigChange(
+                  key as keyof PhysicsPandaConfig,
+                  'min',
+                  e.target.value,
+                )
+              }
+              placeholder="Min"
+              size="sm"
+              sx={{width: '70px'}}
+              type="number"
+              value={
+                (
+                  physicsPandaConfig[key as keyof PhysicsPandaConfig] as {
+                    min: number;
+                  }
+                ).min
+              }
+            />
+            <Input
+              onChange={(e) =>
+                handleRangeConfigChange(
+                  key as keyof PhysicsPandaConfig,
+                  'max',
+                  e.target.value,
+                )
+              }
+              placeholder="Max"
+              size="sm"
+              sx={{width: '70px'}}
+              type="number"
+              value={
+                (
+                  physicsPandaConfig[key as keyof PhysicsPandaConfig] as {
+                    max: number;
+                  }
+                ).max
+              }
+            />
+          </Box>
         </Box>
       ))}
     </Box>
