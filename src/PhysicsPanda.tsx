@@ -30,6 +30,24 @@ const getRandomNumber = (min: number, max: number) =>
 // Helper function to convert degrees to radians
 const degreesToRadians = (degrees: number) => degrees * (Math.PI / 180);
 
+// Helper function to find the shortest angular distance between two angles
+const getShortestAngleDifference = (from: number, to: number) => {
+  let diff = to - from;
+  while (diff > 180) diff -= 360;
+  while (diff < -180) diff += 360;
+  return diff;
+};
+
+// Helper function to smoothly interpolate rotation
+const interpolateRotation = (
+  current: number,
+  target: number,
+  factor: number,
+) => {
+  const diff = getShortestAngleDifference(current, target);
+  return current + diff * factor;
+};
+
 const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
   onAnimationComplete,
   config,
@@ -44,6 +62,7 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
     isRolling: false,
     position: {x: -PANDA_WIDTH, y: -PANDA_HEIGHT},
     rotation: 0,
+    targetRotation: 0,
     velocity: {vx: 0, vy: 0},
   });
 
@@ -109,15 +128,23 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
       state.velocity.vx *= 1 - rollingFriction;
     }
 
-    // --- Update Rotation ---
+    // --- Update Target Rotation ---
     if (state.isRolling) {
       // Continuous rolling rotation based on horizontal movement
-      state.rotation += state.velocity.vx * rollingSpeed;
+      state.targetRotation += state.velocity.vx * rollingSpeed;
     } else {
       // Dynamic rotation to match velocity direction (original behavior)
-      state.rotation =
+      state.targetRotation =
         Math.atan2(state.velocity.vy, state.velocity.vx) * (180 / Math.PI) + 90; // +90 to align image
     }
+
+    // --- Smooth Rotation Interpolation ---
+    const rotationSpeed = state.isRolling ? 1.0 : 0.15; // Faster interpolation for rolling, slower for bouncing
+    state.rotation = interpolateRotation(
+      state.rotation,
+      state.targetRotation,
+      rotationSpeed,
+    );
 
     // --- Update Style ---
     setTransform(
