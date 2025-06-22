@@ -109,16 +109,26 @@ The physics-based panda animation feature is now complete and fully functional! 
 
 ### Solution: Rolling Physics
 
-- [ ] Add "rolling mode" when vertical bouncing gets very small
-- [ ] Implement continuous rotation based on horizontal movement
-- [ ] Add rolling friction to gradually slow horizontal movement
-- [ ] Add new debug parameters:
-  - [ ] `rollingThreshold`: Bounce speed threshold to start rolling
-  - [ ] `rollingFriction`: How quickly rolling slows down
-  - [ ] `rollingSpeed`: Visual rotation speed during rolling
+- [x] Add "rolling mode" when vertical bouncing gets very small
+- [x] Implement continuous rotation based on horizontal movement
+- [x] Add rolling friction to gradually slow horizontal movement
+- [x] Add new debug parameters:
+  - [x] `rollingThreshold`: Bounce speed threshold to start rolling (default: 2)
+  - [x] `rollingFriction`: How quickly rolling slows down (default: 0.02)
+  - [x] `rollingSpeed`: Visual rotation speed during rolling (default: 0.3)
 
 ### Physics Progression
 
 **Bouncing** → **Rolling** → **Exit**
 
 This will create a much more natural and playful physics experience! 🎯
+
+### Implementation Details
+
+- **Rolling Trigger**: When `Math.abs(velocity.vy) < rollingThreshold` and panda is on ground
+- **Rolling Physics**: Stops vertical movement, applies friction to horizontal movement
+- **Rolling Animation**: Continuous rotation based on `velocity.vx * rollingSpeed`
+- **Tunable Parameters**: All rolling behavior is configurable via debug panel
+- **Smooth Transition**: Seamlessly switches between bouncing and rolling modes
+
+✅ **Rolling enhancement complete!** Pandas now transition naturally from bouncing to rolling, eliminating the awkward sliding behavior. The physics feel much more realistic and fun! 🐼🎢
