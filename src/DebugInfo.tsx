@@ -281,6 +281,24 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
             handleConfigChange('bounceDamping', e.target.value),
           value: physicsPandaConfig.bounceDamping,
         },
+        {
+          label: 'Rolling Threshold',
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+            handleConfigChange('rollingThreshold', e.target.value),
+          value: physicsPandaConfig.rollingThreshold,
+        },
+        {
+          label: 'Rolling Friction',
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+            handleConfigChange('rollingFriction', e.target.value),
+          value: physicsPandaConfig.rollingFriction,
+        },
+        {
+          label: 'Rolling Speed',
+          onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+            handleConfigChange('rollingSpeed', e.target.value),
+          value: physicsPandaConfig.rollingSpeed,
+        },
       ].map(({label, value, onChange}) => (
         <Box
           key={label}

@@ -9,6 +9,9 @@ export interface PhysicsPandaConfig {
   entranceAngle: {max: number; min: number};
   entranceSpeed: {max: number; min: number};
   gravity: number;
+  rollingFriction: number;
+  rollingSpeed: number;
+  rollingThreshold: number;
 }
 
 interface PhysicsPandaProps {
@@ -38,6 +41,7 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
 
   const pandaState = useRef({
     animationPhase: 'entering' as 'entering' | 'bouncing' | 'exiting',
+    isRolling: false,
     position: {x: -PANDA_WIDTH, y: -PANDA_HEIGHT},
     rotation: 0,
     velocity: {vx: 0, vy: 0},
@@ -45,7 +49,13 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
 
   const animate = useCallback(() => {
     const state = pandaState.current;
-    const {gravity, bounceDamping} = config;
+    const {
+      gravity,
+      bounceDamping,
+      rollingThreshold,
+      rollingFriction,
+      rollingSpeed,
+    } = config;
 
     // --- Physics Calculations ---
     if (state.animationPhase === 'exiting') {
@@ -53,6 +63,7 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
       state.velocity.vy -= gravity * 1.5;
       // Dampen horizontal movement
       state.velocity.vx *= 0.98;
+      state.isRolling = false; // Stop rolling when exiting
     } else {
       // Apply gravity
       state.velocity.vy += gravity;
@@ -65,6 +76,9 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
     // --- Collision Detection & Response ---
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
+
+    // Check if panda is on the ground
+    const isOnGround = state.position.y + PANDA_HEIGHT >= screenHeight;
 
     // Bounce off floor
     if (state.position.y + PANDA_HEIGHT > screenHeight) {
@@ -81,9 +95,29 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
       state.velocity.vx *= -bounceDamping;
     }
 
-    // Update rotation to match velocity direction
-    state.rotation =
-      Math.atan2(state.velocity.vy, state.velocity.vx) * (180 / Math.PI) + 90; // +90 to align image
+    // --- Rolling Logic ---
+    if (
+      state.animationPhase === 'bouncing' &&
+      isOnGround &&
+      Math.abs(state.velocity.vy) < rollingThreshold
+    ) {
+      // Switch to rolling mode
+      state.isRolling = true;
+      state.velocity.vy = 0; // Stop vertical movement completely
+
+      // Apply rolling friction to horizontal movement
+      state.velocity.vx *= 1 - rollingFriction;
+    }
+
+    // --- Update Rotation ---
+    if (state.isRolling) {
+      // Continuous rolling rotation based on horizontal movement
+      state.rotation += state.velocity.vx * rollingSpeed;
+    } else {
+      // Dynamic rotation to match velocity direction (original behavior)
+      state.rotation =
+        Math.atan2(state.velocity.vy, state.velocity.vx) * (180 / Math.PI) + 90; // +90 to align image
+    }
 
     // --- Update Style ---
     setTransform(

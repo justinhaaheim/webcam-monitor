@@ -97,3 +97,28 @@ This document outlines the plan for implementing a new feature: a physics-based 
 - **Cleanup**: Proper cleanup of animation frames and timeouts on unmount.
 
 The physics-based panda animation feature is now complete and fully functional! 🚀🐼
+
+## Rolling Enhancement (Phase 2)
+
+**Date:** 2024-07-26
+
+### Issue Identified
+
+- Pandas slide awkwardly across the ground when bouncing stops
+- Horizontal velocity continues even with minimal vertical bouncing
+
+### Solution: Rolling Physics
+
+- [ ] Add "rolling mode" when vertical bouncing gets very small
+- [ ] Implement continuous rotation based on horizontal movement
+- [ ] Add rolling friction to gradually slow horizontal movement
+- [ ] Add new debug parameters:
+  - [ ] `rollingThreshold`: Bounce speed threshold to start rolling
+  - [ ] `rollingFriction`: How quickly rolling slows down
+  - [ ] `rollingSpeed`: Visual rotation speed during rolling
+
+### Physics Progression
+
+**Bouncing** → **Rolling** → **Exit**
+
+This will create a much more natural and playful physics experience! 🎯

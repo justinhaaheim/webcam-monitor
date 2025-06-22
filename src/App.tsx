@@ -43,6 +43,9 @@ function App() {
       entranceAngle: {max: 135, min: 45},
       entranceSpeed: {max: 15, min: 10},
       gravity: 0.4,
+      rollingFriction: 0.02,
+      rollingSpeed: 0.3,
+      rollingThreshold: 2,
     });
   const pandaAutoTriggerTimeoutRef = useRef<number | null>(null);
   const physicsPandaAutoTriggerTimeoutRef = useRef<number | null>(null);
