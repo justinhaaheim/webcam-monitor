@@ -10,6 +10,8 @@ export interface PhysicsContainerOptions {
    * Defaults to `document.body`.
    */
   parent?: HTMLElement;
+  /** Render Matter.js debug bounding boxes around bodies */
+  showBounds?: boolean;
 }
 
 export interface PandaLaunchConfig {
@@ -91,6 +93,7 @@ export function createPhysicsContainer(
     options: {
       background: 'transparent',
       height: window.innerHeight,
+      showBounds: options.showBounds ?? false,
       width: window.innerWidth,
       wireframes: false,
     },
@@ -245,6 +248,9 @@ export function createPhysicsContainer(
   function updateConfig(partial: Partial<PhysicsContainerOptions>): void {
     if (partial.gravity !== undefined) {
       engine.world.gravity.y = partial.gravity;
+    }
+    if (partial.showBounds !== undefined) {
+      render.options.showBounds = partial.showBounds;
     }
     // Nothing else yet, but other options could be handled here.
   }
