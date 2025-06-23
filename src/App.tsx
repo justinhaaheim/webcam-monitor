@@ -1,3 +1,5 @@
+import type {PandaLaunchConfig} from './physics/createPhysicsContainer';
+
 import Box from '@mui/joy/Box';
 import {useCallback, useEffect, useRef, useState} from 'react';
 
@@ -5,7 +7,8 @@ import ContinuityCameraHelpModal from './ContinuityCameraHelpModal';
 import Controls from './Controls';
 import DebugInfo from './DebugInfo';
 import PandaWaveAnimation from './PandaWaveAnimation';
-import PhysicsPanda, {type PhysicsPandaConfig} from './PhysicsPanda';
+import PhysicsContainerComponent from './physics/PhysicsContainerComponent';
+import usePhysicsStore from './physics/physicsStore';
 
 // Removed import './App.css';
 
@@ -33,17 +36,6 @@ function App() {
   const [nextPhysicsPandaTime, setNextPhysicsPandaTime] = useState<
     number | null
   >(null);
-  const [physicsPandas, setPhysicsPandas] = useState<
-    {config: PhysicsPandaConfig; id: number}[]
-  >([]);
-  const [physicsPandaConfig, setPhysicsPandaConfig] =
-    useState<PhysicsPandaConfig>({
-      bounceDamping: 0.85,
-      durationOnScreen: {max: 8000, min: 5000},
-      entranceAngle: {max: 135, min: 45},
-      entranceSpeed: {max: 25, min: 20},
-      gravity: 1.2,
-    });
   const pandaAutoTriggerTimeoutRef = useRef<number | null>(null);
   const physicsPandaAutoTriggerTimeoutRef = useRef<number | null>(null);
   const controlsTimeoutRef = useRef<number | null>(null);
@@ -56,6 +48,21 @@ function App() {
 
   // Central function to update stream based on a device ID
   const streamRef = useRef<MediaStream | null>(null);
+
+  const launchPanda = usePhysicsStore((s) => s.launchPanda);
+  const updatePhysicsContainerConfig = usePhysicsStore(
+    (s) => s.updateContainerConfig,
+  );
+
+  const [physicsPandaConfig, setPhysicsPandaConfig] = useState<
+    PandaLaunchConfig & {gravity: number}
+  >({
+    bounceDamping: 0.85,
+    durationOnScreen: {max: 8000, min: 5000},
+    entranceAngle: {max: 135, min: 45},
+    entranceSpeed: {max: 25, min: 20},
+    gravity: 1.2,
+  });
 
   // Helper function to format device data for console.table
   const formatDevicesForTable = useCallback((deviceList: MediaDeviceInfo[]) => {
@@ -559,7 +566,7 @@ function App() {
       }
 
       const nextInterval = useInitialDelay
-        ? getInitialPandaInterval() // Reuse initial delay logic
+        ? getInitialPandaInterval()
         : getRandomPhysicsPandaInterval();
       const nextVisitTime = Date.now() + nextInterval;
       const minutesFromNow = (nextInterval / 60000).toFixed(1);
@@ -571,16 +578,15 @@ function App() {
 
       physicsPandaAutoTriggerTimeoutRef.current = window.setTimeout(() => {
         console.log('🤸 Auto-triggering physics panda! 🎬');
-        setPhysicsPandas((pandas) => [
-          ...pandas,
-          {config: physicsPandaConfig, id: Date.now()},
-        ]);
+        const {gravity: _gravity, ...launchConfig} = physicsPandaConfig;
+        launchPanda(launchConfig as PandaLaunchConfig);
       }, nextInterval);
     },
     [
       getInitialPandaInterval,
       getRandomPhysicsPandaInterval,
       physicsPandaConfig,
+      launchPanda,
     ],
   );
 
@@ -682,20 +688,19 @@ function App() {
   };
 
   const handlePhysicsPandaTrigger = () => {
-    setPhysicsPandas((pandas) => [
-      ...pandas,
-      {config: physicsPandaConfig, id: Date.now()},
-    ]);
+    const {gravity: _gravity, ...launchConfig} = physicsPandaConfig;
+    launchPanda(launchConfig as PandaLaunchConfig);
   };
   const handlePhysicsConfigChange = (
-    newConfig: Partial<PhysicsPandaConfig>,
+    newConfig: Partial<PandaLaunchConfig & {gravity: number}>,
   ) => {
-    setPhysicsPandaConfig((prevConfig) => ({...prevConfig, ...newConfig}));
-  };
-
-  const handlePhysicsPandaComplete = (id: number) => {
-    setPhysicsPandas((pandas) => pandas.filter((p) => p.id !== id));
-    console.log(`🤸 Physics panda ${id} animation completed!`);
+    setPhysicsPandaConfig((prev) => {
+      const updated = {...prev, ...newConfig};
+      if (newConfig.gravity !== undefined) {
+        updatePhysicsContainerConfig({gravity: newConfig.gravity});
+      }
+      return updated;
+    });
   };
 
   return (
@@ -786,14 +791,9 @@ function App() {
         isTriggered={isPandaAnimationTriggered}
         onAnimationComplete={handlePandaAnimationComplete}
       />
-      {physicsPandas.map((panda) => (
-        <PhysicsPanda
-          config={panda.config}
-          id={panda.id}
-          key={panda.id}
-          onAnimationComplete={handlePhysicsPandaComplete}
-        />
-      ))}
+
+      {/* Physics container mount (renders nothing) */}
+      <PhysicsContainerComponent />
     </Box>
   );
 }

@@ -32,6 +32,11 @@ export interface PhysicsContainer {
    * Tear down the physics world and remove associated DOM nodes.
    */
   unload: () => void;
+  /**
+   * Imperatively update container-level config like gravity.
+   * Only provided keys are updated.
+   */
+  updateConfig: (partial: Partial<PhysicsContainerOptions>) => void;
 }
 
 // Internal constants -------------------------------------------------------
@@ -237,6 +242,13 @@ export function createPhysicsContainer(
     return id;
   }
 
+  function updateConfig(partial: Partial<PhysicsContainerOptions>): void {
+    if (partial.gravity !== undefined) {
+      engine.world.gravity.y = partial.gravity;
+    }
+    // Nothing else yet, but other options could be handled here.
+  }
+
   function unload(): void {
     // Clear all pandas & timers
     pandas.forEach((_, id) => destroyPanda(id));
@@ -263,5 +275,6 @@ export function createPhysicsContainer(
   return {
     launchPanda,
     unload,
+    updateConfig,
   };
 }

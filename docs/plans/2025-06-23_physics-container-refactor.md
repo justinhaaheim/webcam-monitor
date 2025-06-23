@@ -50,8 +50,8 @@ interface PhysicsContainer {
 - [ ] Step 2 – Implement container setup (engine, runner, render, walls).
 - [ ] Step 3 – Implement `launchPanda` and panda life-cycle management.
 - [ ] Step 4 – Implement `unload`.
-- [ ] Step 5 – Add basic usage example in comments or storybook (future).
-- [ ] Step 6 – Refactor React side to use the container (separate task).
+- [x] Step 5 – Add Zustand store and `PhysicsContainerComponent` for React integration.
+- [x] Step 6 – Refactor React side (`App.tsx`) to use the shared container and launch pandas via store.
 
 ## Open Questions / To-Do
 
