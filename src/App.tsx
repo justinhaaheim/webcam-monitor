@@ -41,8 +41,8 @@ function App() {
       bounceDamping: 0.85,
       durationOnScreen: {max: 8000, min: 5000},
       entranceAngle: {max: 135, min: 45},
-      entranceSpeed: {max: 15, min: 10},
-      gravity: 0.4,
+      entranceSpeed: {max: 25, min: 20},
+      gravity: 1.2,
     });
   const pandaAutoTriggerTimeoutRef = useRef<number | null>(null);
   const physicsPandaAutoTriggerTimeoutRef = useRef<number | null>(null);
