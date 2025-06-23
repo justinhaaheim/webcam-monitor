@@ -136,6 +136,30 @@ export function createPhysicsContainer(
   let nextId = 1;
   const pandas = new Map<number, PandaMeta>();
 
+  // Debug overlay: draw rotated bounding rectangle
+  if (options.showBounds) {
+    Events.on(render, 'afterRender', () => {
+      const ctx = render.context;
+      ctx.save();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(0,255,0,0.8)';
+      pandas.forEach((meta) => {
+        const {position, angle} = meta.body;
+        ctx.save();
+        ctx.translate(position.x, position.y);
+        ctx.rotate(angle);
+        ctx.strokeRect(
+          -PANDA_WIDTH / 2,
+          -PANDA_HEIGHT / 2,
+          PANDA_WIDTH,
+          PANDA_HEIGHT,
+        );
+        ctx.restore();
+      });
+      ctx.restore();
+    });
+  }
+
   // Helper to remove panda
   function destroyPanda(id: number) {
     const meta = pandas.get(id);
@@ -255,6 +279,47 @@ export function createPhysicsContainer(
     // Nothing else yet, but other options could be handled here.
   }
 
+  // ---------------- Handle Window Resize ---------------------------------
+  function rebuildWalls() {
+    World.remove(engine.world, walls);
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const newWalls = [
+      Bodies.rectangle(
+        width / 2,
+        height + wallThickness / 2,
+        width,
+        wallThickness,
+        wallOptions,
+      ),
+      Bodies.rectangle(
+        -wallThickness / 2,
+        height / 2,
+        wallThickness,
+        height,
+        wallOptions,
+      ),
+      Bodies.rectangle(
+        width + wallThickness / 2,
+        height / 2,
+        wallThickness,
+        height,
+        wallOptions,
+      ),
+    ];
+    walls.splice(0, walls.length, ...newWalls);
+    World.add(engine.world, newWalls);
+
+    // resize canvas
+    render.canvas.width = width;
+    render.canvas.height = height;
+    render.options.width = width;
+    render.options.height = height;
+  }
+
+  const resizeObserver = () => rebuildWalls();
+  window.addEventListener('resize', resizeObserver);
+
   function unload(): void {
     // Clear all pandas & timers
     pandas.forEach((_, id) => destroyPanda(id));
@@ -268,14 +333,19 @@ export function createPhysicsContainer(
 
     // Remove canvas
     render.canvas.remove();
-    // @ts-expect-error private prop cleanup
+    // Clean internal refs (optional for GC)
+    // @ts-expect-error accessing private fields for cleanup
     render.canvas = null;
-    // @ts-expect-error private prop cleanup
+    // @ts-expect-error accessing private fields for cleanup
     render.context = null;
     render.textures = {};
 
     // Remove scene element
     sceneElement.remove();
+
+    if (resizeObserver) {
+      window.removeEventListener('resize', resizeObserver);
+    }
   }
 
   return {
