@@ -1,5 +1,6 @@
 import Box from '@mui/joy/Box';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {Bodies, Body, Engine, Events, Render, Runner, World} from 'matter-js';
+import React, {useEffect, useRef} from 'react';
 
 import pandaImage from './assets/pandaWithCape.png';
 
@@ -32,129 +33,174 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
   config,
   id,
 }) => {
-  const [transform, setTransform] = useState('translateX(-200px)'); // Start off-screen
-  const animationFrameId = useRef<number | null>(null);
-  const exitTimeoutId = useRef<number | null>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const engineRef = useRef<Engine>();
+  const runnerRef = useRef<Runner>();
+  const renderRef = useRef<Render>();
 
-  const pandaState = useRef({
-    animationPhase: 'entering' as 'entering' | 'bouncing' | 'exiting',
-    position: {x: -PANDA_WIDTH, y: -PANDA_HEIGHT},
-    rotation: 0,
-    velocity: {vx: 0, vy: 0},
-  });
-
-  const animate = useCallback(() => {
-    const state = pandaState.current;
-    const {gravity, bounceDamping} = config;
-
-    // --- Physics Calculations ---
-    if (state.animationPhase === 'exiting') {
-      // Upward force to suck the panda up
-      state.velocity.vy -= gravity * 1.5;
-      // Dampen horizontal movement
-      state.velocity.vx *= 0.98;
-    } else {
-      // Apply gravity
-      state.velocity.vy += gravity;
-    }
-
-    // Update position
-    state.position.x += state.velocity.vx;
-    state.position.y += state.velocity.vy;
-
-    // --- Collision Detection & Response ---
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-
-    // Bounce off floor
-    if (state.position.y + PANDA_HEIGHT > screenHeight) {
-      state.position.y = screenHeight - PANDA_HEIGHT;
-      state.velocity.vy *= -bounceDamping;
-    }
-
-    // Bounce off walls
-    if (state.position.x + PANDA_WIDTH > screenWidth) {
-      state.position.x = screenWidth - PANDA_WIDTH;
-      state.velocity.vx *= -bounceDamping;
-    } else if (state.position.x < 0) {
-      state.position.x = 0;
-      state.velocity.vx *= -bounceDamping;
-    }
-
-    // Update rotation to match velocity direction
-    state.rotation =
-      Math.atan2(state.velocity.vy, state.velocity.vx) * (180 / Math.PI) + 90; // +90 to align image
-
-    // --- Update Style ---
-    setTransform(
-      `translate(${state.position.x}px, ${state.position.y}px) rotate(${state.rotation}deg)`,
-    );
-
-    // --- Check for Exit Condition ---
-    if (
-      state.animationPhase === 'exiting' &&
-      state.position.y < -PANDA_HEIGHT
-    ) {
-      onAnimationComplete(id);
-      return; // Stop the loop
-    }
-
-    // Request next frame
-    animationFrameId.current = requestAnimationFrame(animate);
-  }, [config, onAnimationComplete, id]);
+  const animationPhase = useRef<'bouncing' | 'exiting'>('bouncing');
+  const isCompleted = useRef(false);
 
   useEffect(() => {
-    // --- Initialize Panda State ---
-    const {entranceSpeed, entranceAngle, durationOnScreen} = config;
+    if (!sceneRef.current) {
+      return;
+    }
 
+    // --- Matter.js setup ---
+    const engine = Engine.create();
+    engine.world.gravity.y = config.gravity;
+    engineRef.current = engine;
+
+    const render = Render.create({
+      element: sceneRef.current,
+      engine: engine,
+      options: {
+        // Show textures
+        background: 'transparent',
+
+        height: window.innerHeight,
+
+        width: window.innerWidth,
+        wireframes: false,
+      },
+    });
+    renderRef.current = render;
+
+    const runner = Runner.create();
+    runnerRef.current = runner;
+
+    // --- Create Panda Body ---
+    const {entranceSpeed, entranceAngle, bounceDamping} = config;
     const speed = getRandomNumber(entranceSpeed.min, entranceSpeed.max);
     const angleDeg = getRandomNumber(entranceAngle.min, entranceAngle.max);
     const angleRad = degreesToRadians(angleDeg);
-    const duration = getRandomNumber(
-      durationOnScreen.min,
-      durationOnScreen.max,
-    );
 
-    // Reset state
-    const state = pandaState.current;
-    state.animationPhase = 'bouncing';
-    state.velocity.vx = Math.cos(angleRad) * speed;
-    state.velocity.vy = -Math.sin(angleRad) * speed; // Negative for upward initial velocity
+    const initialVelocity = {
+      x: Math.cos(angleRad) * speed,
+      y: -Math.sin(angleRad) * speed, // Negative for upward initial velocity
+    };
 
-    // Set initial position (randomly from left or right)
+    let initialPosition: {x: number; y: number};
     if (Math.random() > 0.5) {
       // From left
-      state.position.x = -PANDA_WIDTH;
-      state.position.y = getRandomNumber(
-        window.innerHeight * 0.2,
-        window.innerHeight * 0.8,
-      );
+      initialPosition = {
+        x: -PANDA_WIDTH / 2,
+        y: getRandomNumber(window.innerHeight * 0.2, window.innerHeight * 0.8),
+      };
     } else {
       // From right
-      state.position.x = window.innerWidth;
-      state.position.y = getRandomNumber(
-        window.innerHeight * 0.2,
-        window.innerHeight * 0.8,
-      );
+      initialPosition = {
+        x: window.innerWidth + PANDA_WIDTH / 2,
+        y: getRandomNumber(window.innerHeight * 0.2, window.innerHeight * 0.8),
+      };
       // Ensure velocity is pointing inwards
-      state.velocity.vx = -Math.abs(state.velocity.vx);
+      initialVelocity.x = -Math.abs(initialVelocity.x);
     }
 
-    // --- Start Animation ---
-    animationFrameId.current = requestAnimationFrame(animate);
+    const pandaBody = Bodies.rectangle(
+      initialPosition.x,
+      initialPosition.y,
+      PANDA_WIDTH,
+      PANDA_HEIGHT,
+      {
+        // Bounciness
+        angle: Math.atan2(initialVelocity.y, initialVelocity.x),
+        render: {
+          sprite: {
+            texture: pandaImage,
+            xScale: PANDA_WIDTH / 458,
+            yScale: PANDA_HEIGHT / 512,
+          },
+        },
+        restitution: bounceDamping,
+      },
+    );
 
-    // --- Schedule Exit ---
-    exitTimeoutId.current = window.setTimeout(() => {
-      pandaState.current.animationPhase = 'exiting';
-    }, duration);
+    Body.setVelocity(pandaBody, initialVelocity);
+    Body.setAngularVelocity(pandaBody, getRandomNumber(-0.05, 0.05));
+
+    // --- Create Walls ---
+    const wallOptions = {
+      isStatic: true,
+      render: {visible: false}, // Walls are invisible
+    };
+    const wallThickness = 100;
+    const walls = [
+      // Floor
+      Bodies.rectangle(
+        window.innerWidth / 2,
+        window.innerHeight + wallThickness / 2,
+        window.innerWidth,
+        wallThickness,
+        wallOptions,
+      ),
+      // Left wall
+      Bodies.rectangle(
+        -wallThickness / 2,
+        window.innerHeight / 2,
+        wallThickness,
+        window.innerHeight,
+        wallOptions,
+      ),
+      // Right wall
+      Bodies.rectangle(
+        window.innerWidth + wallThickness / 2,
+        window.innerHeight / 2,
+        wallThickness,
+        window.innerHeight,
+        wallOptions,
+      ),
+    ];
+
+    World.add(engine.world, [pandaBody, ...walls]);
+
+    // --- Animation Loop & Exit Condition ---
+    const exitTimeoutId = window.setTimeout(
+      () => {
+        animationPhase.current = 'exiting';
+      },
+      getRandomNumber(config.durationOnScreen.min, config.durationOnScreen.max),
+    );
+
+    Events.on(engine, 'beforeUpdate', () => {
+      if (animationPhase.current === 'exiting') {
+        // Apply an upward force to suck the panda up
+        Body.applyForce(pandaBody, pandaBody.position, {
+          x: 0,
+          y: -engine.world.gravity.y * pandaBody.mass * 1.5,
+        });
+      }
+    });
+
+    Events.on(engine, 'afterUpdate', () => {
+      if (
+        !isCompleted.current &&
+        animationPhase.current === 'exiting' &&
+        pandaBody.position.y < -PANDA_HEIGHT
+      ) {
+        isCompleted.current = true;
+        onAnimationComplete(id);
+      }
+    });
+
+    // --- Start simulation ---
+    Render.run(render);
+    Runner.run(runner, engine);
 
     // --- Cleanup ---
     return () => {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-      }
-      if (exitTimeoutId.current) {
-        clearTimeout(exitTimeoutId.current);
+      clearTimeout(exitTimeoutId);
+      if (runnerRef.current) Runner.stop(runnerRef.current);
+      if (renderRef.current) Render.stop(renderRef.current);
+      if (engineRef.current) World.clear(engineRef.current.world, false);
+      if (engineRef.current) Engine.clear(engineRef.current);
+      if (renderRef.current) {
+        renderRef.current.canvas.remove();
+        // @ts-expect-error -- private properties
+        renderRef.current.canvas = null;
+        // @ts-expect-error -- private properties
+        renderRef.current.context = null;
+        renderRef.current.textures = {};
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -162,23 +208,17 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
 
   return (
     <Box
+      ref={sceneRef}
       sx={{
-        height: `${PANDA_HEIGHT}px`,
+        height: '100%',
         left: 0,
         pointerEvents: 'none',
         position: 'fixed',
         top: 0,
-        transform,
-        transition: 'transform 0s linear', // Let JS handle the position
-        width: `${PANDA_WIDTH}px`,
+        width: '100%',
         zIndex: 2000,
-      }}>
-      <img
-        alt="Bouncing panda"
-        src={pandaImage}
-        style={{height: '100%', width: '100%'}}
-      />
-    </Box>
+      }}
+    />
   );
 };
 
