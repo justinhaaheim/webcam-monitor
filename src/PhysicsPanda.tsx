@@ -77,7 +77,7 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
 
     const initialVelocity = {
       x: Math.cos(angleRad) * speed,
-      y: -Math.sin(angleRad) * speed, // Negative for upward initial velocity
+      y: Math.sin(angleRad) * speed,
     };
 
     let initialPosition: {x: number; y: number};
@@ -103,8 +103,6 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
       PANDA_WIDTH,
       PANDA_HEIGHT,
       {
-        // Bounciness
-        angle: Math.atan2(initialVelocity.y, initialVelocity.x),
         render: {
           sprite: {
             texture: pandaImage,
@@ -203,8 +201,7 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
         renderRef.current.textures = {};
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only on mount
+  }, [config, id, onAnimationComplete]); // Run only when relevant props change
 
   return (
     <Box
