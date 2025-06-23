@@ -201,7 +201,8 @@ const PhysicsPanda: React.FC<PhysicsPandaProps> = ({
         renderRef.current.textures = {};
       }
     };
-  }, [config, id, onAnimationComplete]); // Run only when relevant props change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only when relevant props change
 
   return (
     <Box
