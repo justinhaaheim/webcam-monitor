@@ -203,10 +203,12 @@ export async function createPhysicsContainer(
 
         // Allow panda to pass through walls from the outside, but not from inside
         if (isLeftWall && pandaBody.velocity.x > 0) {
+          console.log('Panda entering from left: Passing through wall.');
           pair.isActive = false; // Panda moving right, entering from left
           return;
         }
         if (isRightWall && pandaBody.velocity.x < 0) {
+          console.log('Panda entering from right: Passing through wall.');
           pair.isActive = false; // Panda moving left, entering from right
           return;
         }
@@ -282,6 +284,7 @@ export async function createPhysicsContainer(
         x: -PANDA_WIDTH / 2,
         y: random(window.innerHeight * 0.2, window.innerHeight * 0.8),
       };
+      initialVelocity.x = Math.abs(initialVelocity.x);
     } else {
       // From right
       initialPos = {
