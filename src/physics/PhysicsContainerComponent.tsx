@@ -1,6 +1,9 @@
 import {useEffect} from 'react';
 
-import {createPhysicsContainer} from './createPhysicsContainer';
+import {
+  createPhysicsContainer,
+  type PhysicsContainer,
+} from './createPhysicsContainer';
 import usePhysicsStore from './physicsStore';
 
 /**
@@ -12,11 +15,31 @@ function PhysicsContainerComponent() {
   const containerConfig = usePhysicsStore((s) => s.containerConfig);
 
   useEffect(() => {
-    const container = createPhysicsContainer(containerConfig);
-    setContainer(container);
+    let isCancelled = false;
+    let container: PhysicsContainer | null = null;
+
+    const init = async () => {
+      const newContainer = await createPhysicsContainer(containerConfig);
+      if (isCancelled) {
+        // The effect was cleaned up before we could finish initialization.
+        // We must destroy the container that was just created to avoid leaks.
+        newContainer.unload();
+      } else {
+        container = newContainer;
+        setContainer(newContainer);
+      }
+    };
+
+    init().catch((err) => {
+      // It's good practice to handle potential errors during initialization.
+      console.error('Failed to initialize physics container:', err);
+    });
 
     return () => {
-      container.unload();
+      isCancelled = true;
+      if (container) {
+        container.unload();
+      }
       setContainer(null);
     };
     // We intentionally ignore parent ref because a stable element is expected.

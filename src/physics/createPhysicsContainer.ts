@@ -42,9 +42,6 @@ export interface PhysicsContainer {
 }
 
 // Internal constants -------------------------------------------------------
-const PANDA_HEIGHT = 70; // px
-const PANDA_WIDTH = (PANDA_HEIGHT / 512) * 458; // Maintain aspect ratio
-
 /** Helper to get a random number in a range. */
 function random(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -53,6 +50,24 @@ function random(min: number, max: number): number {
 /** Degrees to radians */
 function degToRad(deg: number): number {
   return (deg * Math.PI) / 180;
+}
+
+/** Helper to load an image and return its dimensions. */
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = (event: Event | string) => {
+      const error =
+        event instanceof Error
+          ? event
+          : new Error(
+              typeof event === 'string' ? event : 'Failed to load image',
+            );
+      reject(error);
+    };
+    img.src = src;
+  });
 }
 
 // Internal types -----------------------------------------------------------
@@ -65,9 +80,14 @@ interface PandaMeta {
 }
 
 // Factory ------------------------------------------------------------------
-export function createPhysicsContainer(
+export async function createPhysicsContainer(
   options: PhysicsContainerOptions,
-): PhysicsContainer {
+): Promise<PhysicsContainer> {
+  const pandaImg = await loadImage(pandaImage);
+  const PANDA_HEIGHT = 70; // px
+  const PANDA_WIDTH =
+    (PANDA_HEIGHT / pandaImg.naturalHeight) * pandaImg.naturalWidth;
+
   const parent = options.parent ?? document.body;
 
   // Create a container element for the renderer so we control styling easily.
@@ -238,8 +258,8 @@ export function createPhysicsContainer(
         render: {
           sprite: {
             texture: pandaImage,
-            xScale: PANDA_WIDTH / 458,
-            yScale: PANDA_HEIGHT / 512,
+            xScale: PANDA_WIDTH / pandaImg.naturalWidth,
+            yScale: PANDA_HEIGHT / pandaImg.naturalHeight,
           },
         },
         restitution: bounceDamping,
