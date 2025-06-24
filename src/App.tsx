@@ -57,10 +57,10 @@ function App() {
   const [physicsPandaConfig, setPhysicsPandaConfig] = useState<
     PandaLaunchConfig & {gravity: number}
   >({
-    bounceDamping: 0.85,
+    bounceDamping: 0.95,
     durationOnScreen: {max: 8000, min: 5000},
-    entranceAngle: {max: 135, min: 45},
-    entranceSpeed: {max: 25, min: 20},
+    entranceAngle: {max: 150, min: 150},
+    entranceSpeed: {max: 25, min: 25},
     gravity: 1.2,
   });
 

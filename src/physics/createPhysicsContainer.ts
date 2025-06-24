@@ -122,7 +122,11 @@ export async function createPhysicsContainer(
   const runner = Runner.create();
 
   // Create walls -----------------------------------------------------------
-  const wallOptions = {isStatic: true, render: {visible: false}} as const;
+  const wallOptions = {
+    isStatic: true,
+    render: {visible: false},
+    restitution: 0.75,
+  } as const;
   const wallThickness = 100;
   const walls = [
     // Floor
@@ -255,6 +259,7 @@ export async function createPhysicsContainer(
       PANDA_WIDTH,
       PANDA_HEIGHT,
       {
+        frictionAir: 0,
         render: {
           sprite: {
             texture: pandaImage,
