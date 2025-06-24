@@ -124,6 +124,7 @@ export async function createPhysicsContainer(
   // Create walls -----------------------------------------------------------
   const wallOptions = {
     isStatic: true,
+    label: 'wall',
     render: {visible: false},
     restitution: 0.75,
   } as const;
@@ -183,6 +184,43 @@ export async function createPhysicsContainer(
       ctx.restore();
     });
   }
+
+  Events.on(engine, 'collisionStart', ({pairs}) => {
+    pairs.forEach((pair) => {
+      // Check for panda-wall collisions
+      const isPandaWallCollision =
+        (pair.bodyA.label === 'panda' && pair.bodyB.label === 'wall') ||
+        (pair.bodyA.label === 'wall' && pair.bodyB.label === 'panda');
+
+      if (isPandaWallCollision) {
+        const pandaBody =
+          pair.bodyA.label === 'panda' ? pair.bodyA : pair.bodyB;
+        const wallBody = pair.bodyA.label === 'wall' ? pair.bodyA : pair.bodyB;
+
+        // Identify which wall it is by its position
+        const isLeftWall = wallBody.position.x < window.innerWidth / 2;
+        const isRightWall = wallBody.position.x > window.innerWidth / 2;
+
+        // Allow panda to pass through walls from the outside, but not from inside
+        if (isLeftWall && pandaBody.velocity.x > 0) {
+          pair.isActive = false; // Panda moving right, entering from left
+          return;
+        }
+        if (isRightWall && pandaBody.velocity.x < 0) {
+          pair.isActive = false; // Panda moving left, entering from right
+          return;
+        }
+
+        // For debugging collisions that *do* happen (from the inside)
+        console.log(
+          `Panda collided with wall. Panda velocity:`,
+          {x: pandaBody.velocity.x, y: pandaBody.velocity.y},
+          'Panda position:',
+          {x: pandaBody.position.x, y: pandaBody.position.y},
+        );
+      }
+    });
+  });
 
   // Helper to remove panda
   function destroyPanda(id: number) {
@@ -260,6 +298,7 @@ export async function createPhysicsContainer(
       PANDA_HEIGHT,
       {
         frictionAir: 0,
+        label: 'panda',
         render: {
           sprite: {
             texture: pandaImage,
