@@ -1,5 +1,3 @@
-import type {PandaLaunchConfig} from './physics/createPhysicsContainer';
-
 import Box from '@mui/joy/Box';
 import {useCallback, useEffect, useRef, useState} from 'react';
 
@@ -51,7 +49,7 @@ function App() {
   const streamRef = useRef<MediaStream | null>(null);
 
   const launchPanda = usePhysicsStore((s) => s.launchPanda);
-  const updatePhysicsContainerConfig = usePhysicsStore(
+  const _updatePhysicsContainerConfig = usePhysicsStore(
     (s) => s.updateContainerConfig,
   );
 
