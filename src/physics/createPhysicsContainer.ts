@@ -51,10 +51,8 @@ function random(min: number, max: number): number {
 
 // Collision groups
 const COLLISION_GROUPS = {
-  PANDAS_ENTERING: -1,
-  // Negative group = never collide with each other
-  PANDAS_INSIDE: 0,
-  WALLS: 1, // Group 0 = use normal collision rules
+  NO_COLLISION: -1, // Walls and entering pandas - never collide with each other
+  PANDAS_INSIDE: 0, // Group 0 = use normal collision rules, can collide with walls when switched
 } as const;
 
 /** Degrees to radians */
@@ -144,7 +142,7 @@ export async function createPhysicsContainer(
 
   const wallOptions = {
     collisionFilter: {
-      group: COLLISION_GROUPS.WALLS,
+      group: COLLISION_GROUPS.NO_COLLISION, // Same negative group as entering pandas = no collision
     },
     isStatic: DEFAULT_WALL_CONFIG.isStatic,
     render: {
@@ -195,9 +193,7 @@ export async function createPhysicsContainer(
   Events.on(engine, 'beforeUpdate', () => {
     pandas.forEach((meta) => {
       // Check if panda is in entering state and has moved into the main area
-      if (
-        meta.body.collisionFilter.group === COLLISION_GROUPS.PANDAS_ENTERING
-      ) {
+      if (meta.body.collisionFilter.group === COLLISION_GROUPS.NO_COLLISION) {
         const wallOffset = debugWalls ? DEBUG_WALL_OFFSET : 0;
         const leftBoundary = wallOffset;
         const rightBoundary = window.innerWidth - wallOffset;
@@ -326,7 +322,7 @@ export async function createPhysicsContainer(
       {
         chamfer: {radius: 20},
         collisionFilter: {
-          group: COLLISION_GROUPS.PANDAS_ENTERING, // Negative group = no collisions with each other
+          group: COLLISION_GROUPS.NO_COLLISION, // Same negative group as walls = no collision with walls or other entering pandas
         },
         frictionAir: 0,
         label: 'panda',
