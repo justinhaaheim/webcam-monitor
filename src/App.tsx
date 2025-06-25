@@ -5,7 +5,7 @@ import ContinuityCameraHelpModal from './ContinuityCameraHelpModal';
 import Controls from './Controls';
 import DebugInfo from './DebugInfo';
 import PandaWaveAnimation from './PandaWaveAnimation';
-import {DEFAULT_PANDA_LAUNCH_CONFIG} from './physics/createPhysicsContainer';
+import {DEFAULT_PANDA_LAUNCH_CONFIG} from './physics/config';
 import PhysicsContainerComponent from './physics/PhysicsContainerComponent';
 import usePhysicsStore from './physics/physicsStore';
 

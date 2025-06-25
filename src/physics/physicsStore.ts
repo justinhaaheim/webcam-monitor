@@ -6,7 +6,7 @@ import type {
 
 import {create} from 'zustand';
 
-import {DEFAULT_CONTAINER_CONFIG} from './createPhysicsContainer';
+import {DEFAULT_CONTAINER_CONFIG} from './config';
 
 // Read URL parameters once on module load
 const urlParams = new URLSearchParams(window.location.search);
