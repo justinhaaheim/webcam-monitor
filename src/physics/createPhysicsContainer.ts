@@ -115,7 +115,7 @@ export async function createPhysicsContainer(
       height: window.innerHeight,
       showBounds: options.showBounds ?? false,
       width: window.innerWidth,
-      wireframes: false,
+      wireframes: options.showBounds ?? false,
     },
   });
 
@@ -160,30 +160,6 @@ export async function createPhysicsContainer(
   // Panda management -------------------------------------------------------
   let nextId = 1;
   const pandas = new Map<number, PandaMeta>();
-
-  // Debug overlay: draw rotated bounding rectangle
-  if (options.showBounds) {
-    Events.on(render, 'afterRender', () => {
-      const ctx = render.context;
-      ctx.save();
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(0,255,0,0.8)';
-      pandas.forEach((meta) => {
-        const {position, angle} = meta.body;
-        ctx.save();
-        ctx.translate(position.x, position.y);
-        ctx.rotate(angle);
-        ctx.strokeRect(
-          -PANDA_WIDTH / 2,
-          -PANDA_HEIGHT / 2,
-          PANDA_WIDTH,
-          PANDA_HEIGHT,
-        );
-        ctx.restore();
-      });
-      ctx.restore();
-    });
-  }
 
   Events.on(engine, 'collisionStart', ({pairs}) => {
     pairs.forEach((pair) => {
@@ -300,6 +276,7 @@ export async function createPhysicsContainer(
       PANDA_WIDTH,
       PANDA_HEIGHT,
       {
+        chamfer: {radius: 20},
         frictionAir: 0,
         label: 'panda',
         render: {
