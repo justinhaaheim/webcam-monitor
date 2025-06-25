@@ -11,6 +11,13 @@ import usePhysicsStore from './physics/physicsStore';
 
 // Removed import './App.css';
 
+// Check for debug mode URL parameter
+const urlParams = new URLSearchParams(window.location.search);
+const isDebugMode = urlParams.has('debug');
+if (isDebugMode) {
+  console.log('🐛 Debug mode enabled via URL parameter');
+}
+
 function App() {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(
@@ -35,6 +42,7 @@ function App() {
   const [nextPhysicsPandaTime, setNextPhysicsPandaTime] = useState<
     number | null
   >(null);
+
   const pandaAutoTriggerTimeoutRef = useRef<number | null>(null);
   const physicsPandaAutoTriggerTimeoutRef = useRef<number | null>(null);
   const controlsTimeoutRef = useRef<number | null>(null);
@@ -702,6 +710,21 @@ function App() {
           width: '100%',
         }}
       />
+
+      {/* Debug mode overlay */}
+      {isDebugMode && (
+        <Box
+          sx={{
+            backgroundColor: 'rgba(64, 64, 64, 0.8)', // Dark grey with transparency
+            height: '100%',
+            left: 0,
+            position: 'absolute',
+            top: 0,
+            width: '100%',
+            zIndex: 10, // Above video but below controls
+          }}
+        />
+      )}
 
       {error && !stream && (
         <Box
