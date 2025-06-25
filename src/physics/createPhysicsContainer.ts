@@ -49,10 +49,11 @@ function random(min: number, max: number): number {
   return Math.random() * (max - min) + min;
 }
 
-// Collision groups
-const COLLISION_GROUPS = {
-  NO_COLLISION: -1, // Walls and entering pandas - never collide with each other
-  PANDAS_INSIDE: 0, // Group 0 = use normal collision rules, can collide with walls when switched
+// Collision categories (powers of 2 for bitwise operations)
+const COLLISION_CATEGORIES = {
+  PANDA_ENTERING: 0x0002,
+  PANDA_INSIDE: 0x0004,
+  WALL: 0x0001,
 } as const;
 
 /** Degrees to radians */
@@ -142,7 +143,8 @@ export async function createPhysicsContainer(
 
   const wallOptions = {
     collisionFilter: {
-      group: COLLISION_GROUPS.NO_COLLISION, // Same negative group as entering pandas = no collision
+      category: COLLISION_CATEGORIES.WALL,
+      mask: COLLISION_CATEGORIES.PANDA_INSIDE, // Only collide with inside pandas
     },
     isStatic: DEFAULT_WALL_CONFIG.isStatic,
     render: {
@@ -193,7 +195,10 @@ export async function createPhysicsContainer(
   Events.on(engine, 'beforeUpdate', () => {
     pandas.forEach((meta) => {
       // Check if panda is in entering state and has moved into the main area
-      if (meta.body.collisionFilter.group === COLLISION_GROUPS.NO_COLLISION) {
+      if (
+        meta.body.collisionFilter.category ===
+        COLLISION_CATEGORIES.PANDA_ENTERING
+      ) {
         const wallOffset = debugWalls ? DEBUG_WALL_OFFSET : 0;
         const leftBoundary = wallOffset;
         const rightBoundary = window.innerWidth - wallOffset;
@@ -204,7 +209,10 @@ export async function createPhysicsContainer(
           meta.body.position.x < rightBoundary - PANDA_WIDTH / 2
         ) {
           console.log('🐼 Panda entered main area, enabling wall collisions');
-          meta.body.collisionFilter.group = COLLISION_GROUPS.PANDAS_INSIDE;
+          meta.body.collisionFilter.category =
+            COLLISION_CATEGORIES.PANDA_INSIDE;
+          meta.body.collisionFilter.mask =
+            COLLISION_CATEGORIES.WALL | COLLISION_CATEGORIES.PANDA_INSIDE;
         }
       }
 
@@ -322,7 +330,8 @@ export async function createPhysicsContainer(
       {
         chamfer: {radius: 20},
         collisionFilter: {
-          group: COLLISION_GROUPS.NO_COLLISION, // Same negative group as walls = no collision with walls or other entering pandas
+          category: COLLISION_CATEGORIES.PANDA_ENTERING,
+          mask: 0, // Don't collide with anything while entering
         },
         frictionAir: 0,
         label: 'panda',
