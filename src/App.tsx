@@ -711,7 +711,7 @@ function App() {
       {isDebugMode && (
         <Box
           sx={{
-            backgroundColor: 'rgba(64, 64, 64, 0.8)', // Dark grey with transparency
+            backgroundColor: 'rgba(64, 64, 64, 0.95)', // Dark grey with transparency
             height: '100%',
             left: 0,
             position: 'absolute',

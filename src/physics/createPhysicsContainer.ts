@@ -49,6 +49,13 @@ function random(min: number, max: number): number {
   return Math.random() * (max - min) + min;
 }
 
+// Collision filtering categories (powers of 2)
+const COLLISION_CATEGORIES = {
+  PANDA_ENTERING: 0x0002,
+  PANDA_INSIDE: 0x0004,
+  WALL: 0x0001,
+} as const;
+
 /** Degrees to radians */
 function degToRad(deg: number): number {
   return deg * (Math.PI / 180);
@@ -135,6 +142,10 @@ export async function createPhysicsContainer(
   const debugWalls = usePhysicsStore.getState().debugWalls;
 
   const wallOptions = {
+    collisionFilter: {
+      category: COLLISION_CATEGORIES.WALL,
+      mask: COLLISION_CATEGORIES.PANDA_INSIDE, // Only collide with pandas that are inside
+    },
     isStatic: DEFAULT_WALL_CONFIG.isStatic,
     render: {
       ...DEFAULT_WALL_CONFIG.render,
@@ -180,51 +191,40 @@ export async function createPhysicsContainer(
   let nextId = 1;
   const pandas = new Map<number, PandaMeta>();
 
-  Events.on(engine, 'collisionStart', ({pairs}) => {
-    pairs.forEach((pair) => {
-      // Check for panda-wall collisions
-      const isPandaWallCollision =
-        (pair.bodyA.label === 'panda' && pair.bodyB.label.startsWith('wall')) ||
-        (pair.bodyA.label.startsWith('wall') && pair.bodyB.label === 'panda');
+  // Update pandas collision category when they enter the main area
+  Events.on(engine, 'beforeUpdate', () => {
+    pandas.forEach((meta) => {
+      // Check if panda is in entering state and has moved into the main area
+      if (
+        meta.body.collisionFilter.category ===
+        COLLISION_CATEGORIES.PANDA_ENTERING
+      ) {
+        const wallOffset = debugWalls ? DEBUG_WALL_OFFSET : 0;
+        const leftBoundary = wallOffset;
+        const rightBoundary = window.innerWidth - wallOffset;
 
-      if (isPandaWallCollision) {
-        const pandaBody =
-          pair.bodyA.label === 'panda' ? pair.bodyA : pair.bodyB;
-        const wallBody = pair.bodyA.label.startsWith('wall')
-          ? pair.bodyA
-          : pair.bodyB;
-
-        // Identify which wall it is by its position
-        const isLeftWall = wallBody.position.x < window.innerWidth / 2;
-        const isRightWall = wallBody.position.x > window.innerWidth / 2;
-
-        console.debug(
-          `Panda collided with ${wallBody.label}. Panda velocity x=${pandaBody.velocity.x} y=${pandaBody.velocity.y}`,
-          {
-            pandaBody,
-            wallBody,
-          },
-        );
-
-        // Allow panda to pass through walls from the outside, but not from inside
-        if (isLeftWall && pandaBody.velocity.x >= 0) {
-          console.log('⭐️ Panda entering from left: Passing through wall.');
-          pair.isActive = false; // Panda moving right, entering from left
-          return;
+        // If panda has moved fully inside the boundaries, switch to inside category
+        if (
+          meta.body.position.x > leftBoundary + PANDA_WIDTH / 2 &&
+          meta.body.position.x < rightBoundary - PANDA_WIDTH / 2
+        ) {
+          console.log('🐼 Panda entered main area, enabling wall collisions');
+          meta.body.collisionFilter.category =
+            COLLISION_CATEGORIES.PANDA_INSIDE;
+          meta.body.collisionFilter.mask =
+            COLLISION_CATEGORIES.WALL |
+            COLLISION_CATEGORIES.PANDA_ENTERING |
+            COLLISION_CATEGORIES.PANDA_INSIDE;
         }
-        if (isRightWall && pandaBody.velocity.x <= 0) {
-          console.log('⭐️ Panda entering from right: Passing through wall.');
-          pair.isActive = false; // Panda moving left, entering from right
-          return;
-        }
+      }
 
-        // // For debugging collisions that *do* happen (from the inside)
-        // console.log(
-        //   `Panda collided with wall. Panda velocity:`,
-        //   {x: pandaBody.velocity.x, y: pandaBody.velocity.y},
-        //   'Panda position:',
-        //   {x: pandaBody.position.x, y: pandaBody.position.y},
-        // );
+      // Apply exit forces for pandas in exiting phase
+      if (meta.phase === 'exiting') {
+        // Apply upward force proportional to gravity
+        Body.applyForce(meta.body, meta.body.position, {
+          x: 0,
+          y: -engine.world.gravity.y * meta.body.mass * 1.5,
+        });
       }
     });
   });
@@ -238,18 +238,7 @@ export async function createPhysicsContainer(
     World.remove(engine.world, meta.body);
   }
 
-  // Update hooks -----------------------------------------------------------
-  Events.on(engine, 'beforeUpdate', () => {
-    pandas.forEach((meta) => {
-      if (meta.phase === 'exiting') {
-        // Apply upward force proportional to gravity
-        Body.applyForce(meta.body, meta.body.position, {
-          x: 0,
-          y: -engine.world.gravity.y * meta.body.mass * 1.5,
-        });
-      }
-    });
-  });
+  // Update hooks (already handled in the beforeUpdate above) -----------
 
   Events.on(engine, 'afterUpdate', () => {
     pandas.forEach((meta, id) => {
@@ -342,6 +331,12 @@ export async function createPhysicsContainer(
       PANDA_HEIGHT,
       {
         chamfer: {radius: 20},
+        collisionFilter: {
+          category: COLLISION_CATEGORIES.PANDA_ENTERING,
+          mask:
+            COLLISION_CATEGORIES.PANDA_ENTERING |
+            COLLISION_CATEGORIES.PANDA_INSIDE, // Can collide with other pandas
+        },
         frictionAir: 0,
         label: 'panda',
         render: {
@@ -398,14 +393,28 @@ export async function createPhysicsContainer(
           : height + wallThickness / 2,
         width,
         wallThickness,
-        {...wallOptions, label: 'floor'},
+        {
+          ...wallOptions,
+          collisionFilter: {
+            category: COLLISION_CATEGORIES.WALL,
+            mask: COLLISION_CATEGORIES.PANDA_INSIDE,
+          },
+          label: 'floor',
+        },
       ),
       Bodies.rectangle(
         debugWalls ? DEBUG_WALL_OFFSET - wallThickness / 2 : -wallThickness / 2,
         height / 2,
         wallThickness,
         height,
-        {...wallOptions, label: 'wall-left'},
+        {
+          ...wallOptions,
+          collisionFilter: {
+            category: COLLISION_CATEGORIES.WALL,
+            mask: COLLISION_CATEGORIES.PANDA_INSIDE,
+          },
+          label: 'wall-left',
+        },
       ),
       Bodies.rectangle(
         debugWalls
@@ -414,7 +423,14 @@ export async function createPhysicsContainer(
         height / 2,
         wallThickness,
         height,
-        {...wallOptions, label: 'wall-right'},
+        {
+          ...wallOptions,
+          collisionFilter: {
+            category: COLLISION_CATEGORIES.WALL,
+            mask: COLLISION_CATEGORIES.PANDA_INSIDE,
+          },
+          label: 'wall-right',
+        },
       ),
     ];
     walls.splice(0, walls.length, ...newWalls);
