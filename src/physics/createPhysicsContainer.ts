@@ -126,7 +126,7 @@ export async function createPhysicsContainer(
     isStatic: true,
     label: 'wall',
     render: {visible: false},
-    restitution: 0.75,
+    restitution: 0.55,
   } as const;
   const wallThickness = 100;
   const walls = [
