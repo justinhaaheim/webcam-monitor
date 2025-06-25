@@ -49,7 +49,7 @@ function random(min: number, max: number): number {
 
 /** Degrees to radians */
 function degToRad(deg: number): number {
-  return (deg * Math.PI) / 180;
+  return deg * (Math.PI / 180);
 }
 
 /** Helper to load an image and return its dimensions. */
@@ -105,7 +105,7 @@ export async function createPhysicsContainer(
 
   // Matter.js setup --------------------------------------------------------
   const engine = Engine.create();
-  engine.world.gravity.y = options.gravity;
+  engine.gravity.y = options.gravity;
 
   const render = Render.create({
     element: sceneElement,
@@ -113,8 +113,14 @@ export async function createPhysicsContainer(
     options: {
       background: 'transparent',
       height: window.innerHeight,
+      // showAngleIndicator: true,
+      // showAxes: true,
       showBounds: options.showBounds ?? false,
+      // showCollisions: true,
+      // showConvexHulls: true,
+      showDebug: true,
       width: window.innerWidth,
+      wireframeBackground: 'transparent',
       wireframes: options.showBounds ?? false,
     },
   });
@@ -124,7 +130,6 @@ export async function createPhysicsContainer(
   // Create walls -----------------------------------------------------------
   const wallOptions = {
     isStatic: true,
-    label: 'wall',
     render: {visible: false},
     restitution: 0.55,
   } as const;
@@ -136,7 +141,7 @@ export async function createPhysicsContainer(
       window.innerHeight + wallThickness / 2,
       window.innerWidth,
       wallThickness,
-      wallOptions,
+      {...wallOptions, label: 'floor'},
     ),
     // Left wall
     Bodies.rectangle(
@@ -144,7 +149,7 @@ export async function createPhysicsContainer(
       window.innerHeight / 2,
       wallThickness,
       window.innerHeight,
-      wallOptions,
+      {...wallOptions, label: 'wall-left'},
     ),
     // Right wall
     Bodies.rectangle(
@@ -152,7 +157,7 @@ export async function createPhysicsContainer(
       window.innerHeight / 2,
       wallThickness,
       window.innerHeight,
-      wallOptions,
+      {...wallOptions, label: 'wall-right'},
     ),
   ];
   World.add(engine.world, walls);
@@ -165,37 +170,47 @@ export async function createPhysicsContainer(
     pairs.forEach((pair) => {
       // Check for panda-wall collisions
       const isPandaWallCollision =
-        (pair.bodyA.label === 'panda' && pair.bodyB.label === 'wall') ||
-        (pair.bodyA.label === 'wall' && pair.bodyB.label === 'panda');
+        (pair.bodyA.label === 'panda' && pair.bodyB.label.startsWith('wall')) ||
+        (pair.bodyA.label.startsWith('wall') && pair.bodyB.label === 'panda');
 
       if (isPandaWallCollision) {
         const pandaBody =
           pair.bodyA.label === 'panda' ? pair.bodyA : pair.bodyB;
-        const wallBody = pair.bodyA.label === 'wall' ? pair.bodyA : pair.bodyB;
+        const wallBody = pair.bodyA.label.startsWith('wall')
+          ? pair.bodyA
+          : pair.bodyB;
 
         // Identify which wall it is by its position
         const isLeftWall = wallBody.position.x < window.innerWidth / 2;
         const isRightWall = wallBody.position.x > window.innerWidth / 2;
 
+        console.debug(
+          `Panda collided with ${wallBody.label}. Panda velocity x=${pandaBody.velocity.x} y=${pandaBody.velocity.y}`,
+          {
+            pandaBody,
+            wallBody,
+          },
+        );
+
         // Allow panda to pass through walls from the outside, but not from inside
-        if (isLeftWall && pandaBody.velocity.x > 0) {
-          console.log('Panda entering from left: Passing through wall.');
+        if (isLeftWall && pandaBody.velocity.x >= 0) {
+          console.log('⭐️ Panda entering from left: Passing through wall.');
           pair.isActive = false; // Panda moving right, entering from left
           return;
         }
-        if (isRightWall && pandaBody.velocity.x < 0) {
-          console.log('Panda entering from right: Passing through wall.');
+        if (isRightWall && pandaBody.velocity.x <= 0) {
+          console.log('⭐️ Panda entering from right: Passing through wall.');
           pair.isActive = false; // Panda moving left, entering from right
           return;
         }
 
-        // For debugging collisions that *do* happen (from the inside)
-        console.log(
-          `Panda collided with wall. Panda velocity:`,
-          {x: pandaBody.velocity.x, y: pandaBody.velocity.y},
-          'Panda position:',
-          {x: pandaBody.position.x, y: pandaBody.position.y},
-        );
+        // // For debugging collisions that *do* happen (from the inside)
+        // console.log(
+        //   `Panda collided with wall. Panda velocity:`,
+        //   {x: pandaBody.velocity.x, y: pandaBody.velocity.y},
+        //   'Panda position:',
+        //   {x: pandaBody.position.x, y: pandaBody.position.y},
+        // );
       }
     });
   });
@@ -245,8 +260,24 @@ export async function createPhysicsContainer(
 
     const {entranceSpeed, entranceAngle, bounceDamping} = config;
     const speed = random(entranceSpeed.min, entranceSpeed.max);
+    // const speed = 10;
+
+    // 0deg is to the right
+    // 90deg is down
+    // 180deg is to the left
+    // 270deg is up
     const angleDeg = random(entranceAngle.min, entranceAngle.max);
+    // const angleDeg = 320;
+
     const angleRad = degToRad(angleDeg);
+
+    const enterFromLeft = Math.random() > 0.5;
+    // const enterFromLeft = true;
+
+    const durationOnScreen = random(
+      config.durationOnScreen.min,
+      config.durationOnScreen.max,
+    );
 
     const initialVelocity = {
       x: Math.cos(angleRad) * speed,
@@ -254,7 +285,7 @@ export async function createPhysicsContainer(
     };
 
     let initialPos: {x: number; y: number};
-    if (Math.random() > 0.5) {
+    if (enterFromLeft) {
       // From left
       initialPos = {
         x: -PANDA_WIDTH / 2,
@@ -269,6 +300,24 @@ export async function createPhysicsContainer(
       };
       initialVelocity.x = -Math.abs(initialVelocity.x);
     }
+
+    // For debugging: center the panda in the middle of the screen
+    // initialPos.x = window.innerWidth / 2;
+    // initialPos.y = window.innerHeight / 2;
+    // initialVelocity.x = 10;
+    // initialVelocity.y = 0;
+
+    console.log('[launchPanda] Launching bear with config', {
+      angleDeg,
+      angleRad,
+      bounceDamping,
+      durationOnScreen: config.durationOnScreen,
+      entranceAngle: config.entranceAngle,
+      entranceSpeed: config.entranceSpeed,
+      initialPos,
+      initialVelocity,
+      speed,
+    });
 
     const pandaBody = Bodies.rectangle(
       initialPos.x,
@@ -295,13 +344,10 @@ export async function createPhysicsContainer(
 
     World.add(engine.world, pandaBody);
 
-    const exitTimeout = window.setTimeout(
-      () => {
-        const meta = pandas.get(id);
-        if (meta) meta.phase = 'exiting';
-      },
-      random(config.durationOnScreen.min, config.durationOnScreen.max),
-    );
+    const exitTimeout = window.setTimeout(() => {
+      const meta = pandas.get(id);
+      if (meta) meta.phase = 'exiting';
+    }, durationOnScreen);
 
     pandas.set(id, {
       body: pandaBody,
@@ -315,7 +361,7 @@ export async function createPhysicsContainer(
 
   function updateConfig(partial: Partial<PhysicsContainerOptions>): void {
     if (partial.gravity !== undefined) {
-      engine.world.gravity.y = partial.gravity;
+      engine.gravity.y = partial.gravity;
     }
     if (partial.showBounds !== undefined) {
       render.options.showBounds = partial.showBounds;

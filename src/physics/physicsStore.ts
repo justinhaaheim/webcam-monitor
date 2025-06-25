@@ -24,8 +24,8 @@ interface PhysicsState {
  * Allows any component to launch new pandas without prop-drilling.
  */
 const DEFAULT_CONTAINER_CONFIG: PhysicsContainerOptions = {
-  gravity: 1.2,
-  showBounds: true,
+  gravity: 0.5,
+  showBounds: false,
 };
 
 const usePhysicsStore = create<PhysicsState>((set, get) => ({

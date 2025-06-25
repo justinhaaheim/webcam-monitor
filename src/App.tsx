@@ -59,9 +59,9 @@ function App() {
   >({
     bounceDamping: 0.95,
     durationOnScreen: {max: 8000, min: 5000},
-    entranceAngle: {max: 150, min: 150},
-    entranceSpeed: {max: 25, min: 25},
-    gravity: 1.2,
+    entranceAngle: {max: 320, min: 320},
+    entranceSpeed: {max: 10, min: 10},
+    gravity: 0.01,
   });
 
   // Helper function to format device data for console.table
