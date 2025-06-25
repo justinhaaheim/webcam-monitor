@@ -11,12 +11,7 @@ import usePhysicsStore from './physics/physicsStore';
 
 // Removed import './App.css';
 
-// Check for debug mode URL parameter
-const urlParams = new URLSearchParams(window.location.search);
-const isDebugMode = urlParams.has('debug');
-if (isDebugMode) {
-  console.log('🐛 Debug mode enabled via URL parameter');
-}
+// Debug mode is now handled in the physics store
 
 function App() {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
@@ -60,6 +55,7 @@ function App() {
   const _updatePhysicsContainerConfig = usePhysicsStore(
     (s) => s.updateContainerConfig,
   );
+  const isDebugMode = usePhysicsStore((s) => s.debugMode);
 
   // Helper function to format device data for console.table
   const formatDevicesForTable = useCallback((deviceList: MediaDeviceInfo[]) => {

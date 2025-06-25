@@ -1,6 +1,7 @@
 import {Bodies, Body, Engine, Events, Render, Runner, World} from 'matter-js';
 
 import pandaImage from '../assets/pandaWithCape.png';
+import usePhysicsStore from './physicsStore';
 
 // CONSOLIDATED PHYSICS CONFIGURATION =================================
 // All physics-related configuration values in one place for easy tuning
@@ -159,24 +160,34 @@ export async function createPhysicsContainer(
   const runner = Runner.create();
 
   // Create walls -----------------------------------------------------------
+  // Debug mode: move walls into viewport for visibility and testing
+  const DEBUG_WALL_OFFSET = 200; // px to move walls inward
+  const debugWalls = usePhysicsStore.getState().debugWalls;
+
   const wallOptions = {
     isStatic: DEFAULT_WALL_CONFIG.isStatic,
-    render: DEFAULT_WALL_CONFIG.render,
+    render: {
+      ...DEFAULT_WALL_CONFIG.render,
+      visible: debugWalls, // Make walls visible in debug mode
+    },
     restitution: DEFAULT_WALL_CONFIG.restitution,
   };
   const wallThickness = DEFAULT_WALL_CONFIG.thickness;
+
   const walls = [
     // Floor
     Bodies.rectangle(
       window.innerWidth / 2,
-      window.innerHeight + wallThickness / 2,
+      debugWalls
+        ? window.innerHeight - DEBUG_WALL_OFFSET + wallThickness / 2
+        : window.innerHeight + wallThickness / 2,
       window.innerWidth,
       wallThickness,
       {...wallOptions, label: 'floor'},
     ),
     // Left wall
     Bodies.rectangle(
-      -wallThickness / 2,
+      debugWalls ? DEBUG_WALL_OFFSET - wallThickness / 2 : -wallThickness / 2,
       window.innerHeight / 2,
       wallThickness,
       window.innerHeight,
@@ -184,7 +195,9 @@ export async function createPhysicsContainer(
     ),
     // Right wall
     Bodies.rectangle(
-      window.innerWidth + wallThickness / 2,
+      debugWalls
+        ? window.innerWidth - DEBUG_WALL_OFFSET + wallThickness / 2
+        : window.innerWidth + wallThickness / 2,
       window.innerHeight / 2,
       wallThickness,
       window.innerHeight,
@@ -319,14 +332,16 @@ export async function createPhysicsContainer(
     if (enterFromLeft) {
       // From left
       initialPos = {
-        x: -PANDA_WIDTH / 2,
+        x: debugWalls ? DEBUG_WALL_OFFSET - PANDA_WIDTH / 2 : -PANDA_WIDTH / 2,
         y: random(window.innerHeight * 0.2, window.innerHeight * 0.8),
       };
       initialVelocity.x = Math.abs(initialVelocity.x);
     } else {
       // From right
       initialPos = {
-        x: window.innerWidth + PANDA_WIDTH / 2,
+        x: debugWalls
+          ? window.innerWidth - DEBUG_WALL_OFFSET + PANDA_WIDTH / 2
+          : window.innerWidth + PANDA_WIDTH / 2,
         y: random(window.innerHeight * 0.2, window.innerHeight * 0.8),
       };
       initialVelocity.x = -Math.abs(initialVelocity.x);
@@ -408,24 +423,28 @@ export async function createPhysicsContainer(
     const newWalls = [
       Bodies.rectangle(
         width / 2,
-        height + wallThickness / 2,
+        debugWalls
+          ? height - DEBUG_WALL_OFFSET + wallThickness / 2
+          : height + wallThickness / 2,
         width,
         wallThickness,
-        wallOptions,
+        {...wallOptions, label: 'floor'},
       ),
       Bodies.rectangle(
-        -wallThickness / 2,
+        debugWalls ? DEBUG_WALL_OFFSET - wallThickness / 2 : -wallThickness / 2,
         height / 2,
         wallThickness,
         height,
-        wallOptions,
+        {...wallOptions, label: 'wall-left'},
       ),
       Bodies.rectangle(
-        width + wallThickness / 2,
+        debugWalls
+          ? width - DEBUG_WALL_OFFSET + wallThickness / 2
+          : width + wallThickness / 2,
         height / 2,
         wallThickness,
         height,
-        wallOptions,
+        {...wallOptions, label: 'wall-right'},
       ),
     ];
     walls.splice(0, walls.length, ...newWalls);
