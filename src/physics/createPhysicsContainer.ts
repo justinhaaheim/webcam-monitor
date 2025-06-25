@@ -2,6 +2,37 @@ import {Bodies, Body, Engine, Events, Render, Runner, World} from 'matter-js';
 
 import pandaImage from '../assets/pandaWithCape.png';
 
+// CONSOLIDATED PHYSICS CONFIGURATION =================================
+// All physics-related configuration values in one place for easy tuning
+
+/** Default configuration for the physics container (engine, gravity, rendering) */
+export const DEFAULT_CONTAINER_CONFIG: PhysicsContainerOptions = {
+  gravity: 0.5,
+  showBounds: false,
+};
+
+/** Default configuration for launching pandas */
+export const DEFAULT_PANDA_LAUNCH_CONFIG: PandaLaunchConfig = {
+  bounceDamping: 0.95,
+  durationOnScreen: {max: 8000, min: 5000},
+  entranceAngle: {max: 320, min: 320},
+  entranceSpeed: {max: 10, min: 10},
+};
+
+/** Wall physics configuration */
+export const DEFAULT_WALL_CONFIG = {
+  isStatic: true,
+  render: {visible: false},
+  restitution: 0.55,
+  thickness: 100,
+} as const;
+
+/** Panda sprite configuration */
+export const DEFAULT_PANDA_CONFIG = {
+  height: 70, // px
+  // Width calculated to maintain aspect ratio
+} as const;
+
 // Public types -------------------------------------------------------------
 export interface PhysicsContainerOptions {
   gravity: number;
@@ -84,7 +115,7 @@ export async function createPhysicsContainer(
   options: PhysicsContainerOptions,
 ): Promise<PhysicsContainer> {
   const pandaImg = await loadImage(pandaImage);
-  const PANDA_HEIGHT = 70; // px
+  const PANDA_HEIGHT = DEFAULT_PANDA_CONFIG.height;
   const PANDA_WIDTH =
     (PANDA_HEIGHT / pandaImg.naturalHeight) * pandaImg.naturalWidth;
 
@@ -129,11 +160,11 @@ export async function createPhysicsContainer(
 
   // Create walls -----------------------------------------------------------
   const wallOptions = {
-    isStatic: true,
-    render: {visible: false},
-    restitution: 0.55,
-  } as const;
-  const wallThickness = 100;
+    isStatic: DEFAULT_WALL_CONFIG.isStatic,
+    render: DEFAULT_WALL_CONFIG.render,
+    restitution: DEFAULT_WALL_CONFIG.restitution,
+  };
+  const wallThickness = DEFAULT_WALL_CONFIG.thickness;
   const walls = [
     // Floor
     Bodies.rectangle(

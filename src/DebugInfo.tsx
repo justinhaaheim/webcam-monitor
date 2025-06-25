@@ -3,17 +3,13 @@ import Input from '@mui/joy/Input';
 import Typography from '@mui/joy/Typography';
 import React, {useEffect, useState} from 'react';
 
-import {type PhysicsPandaConfig} from './PhysicsPanda';
-
 interface DebugInfoProps {
   fillMode: 'cover' | 'contain';
   isFlipped: boolean;
   nextPandaTime: number | null;
   nextPhysicsPandaTime: number | null;
   onPandaTrigger: () => void;
-  onPhysicsConfigChange: (newConfig: Partial<PhysicsPandaConfig>) => void;
   onPhysicsPandaTrigger: () => void;
-  physicsPandaConfig: PhysicsPandaConfig;
   selectedDeviceId: string | undefined;
   stream: MediaStream | null;
   videoResolution: {height: number | undefined; width: number | undefined};
@@ -26,9 +22,7 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
   nextPandaTime,
   nextPhysicsPandaTime,
   onPandaTrigger,
-  onPhysicsConfigChange,
   onPhysicsPandaTrigger,
-  physicsPandaConfig,
   selectedDeviceId,
   videoResolution,
 }) => {
@@ -130,30 +124,6 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
   const labelStyles = {
     color: 'text.tertiary',
     fontSize: '0.8rem',
-  };
-
-  const handleConfigChange = (key: keyof PhysicsPandaConfig, value: string) => {
-    const numericValue = parseFloat(value);
-    if (!isNaN(numericValue)) {
-      onPhysicsConfigChange({[key]: numericValue});
-    }
-  };
-
-  const handleRangeConfigChange = (
-    key: keyof PhysicsPandaConfig,
-    subKey: 'min' | 'max',
-    value: string,
-  ) => {
-    const numericValue = parseFloat(value);
-    if (!isNaN(numericValue)) {
-      const existingRange = physicsPandaConfig[key] as {
-        max: number;
-        min: number;
-      };
-      onPhysicsConfigChange({
-        [key]: {...existingRange, [subKey]: numericValue},
-      });
-    }
   };
 
   return (
@@ -267,111 +237,6 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
         }}>
         Physics Panda
       </Typography>
-
-      {[
-        {
-          label: 'Gravity',
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-            handleConfigChange('gravity', e.target.value),
-          value: physicsPandaConfig.gravity,
-        },
-        {
-          label: 'Bounce Damping',
-          onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-            handleConfigChange('bounceDamping', e.target.value),
-          value: physicsPandaConfig.bounceDamping,
-        },
-      ].map(({label, value, onChange}) => (
-        <Box
-          key={label}
-          sx={{
-            alignItems: 'center',
-            display: 'flex',
-            justifyContent: 'space-between',
-            py: 0.5,
-          }}>
-          <Typography component="span" sx={labelStyles}>
-            {label}:
-          </Typography>
-          <Input
-            onChange={onChange}
-            size="sm"
-            sx={{width: '80px'}}
-            type="number"
-            value={value}
-          />
-        </Box>
-      ))}
-
-      {[
-        {
-          key: 'entranceSpeed',
-          label: 'Entrance Speed',
-        },
-        {
-          key: 'entranceAngle',
-          label: 'Entrance Angle',
-        },
-        {
-          key: 'durationOnScreen',
-          label: 'Duration (ms)',
-        },
-      ].map(({label, key}) => (
-        <Box
-          key={label}
-          sx={{
-            alignItems: 'center',
-            display: 'flex',
-            justifyContent: 'space-between',
-            py: 0.5,
-          }}>
-          <Typography component="span" sx={labelStyles}>
-            {label}:
-          </Typography>
-          <Box sx={{display: 'flex', gap: 1}}>
-            <Input
-              onChange={(e) =>
-                handleRangeConfigChange(
-                  key as keyof PhysicsPandaConfig,
-                  'min',
-                  e.target.value,
-                )
-              }
-              placeholder="Min"
-              size="sm"
-              sx={{width: '70px'}}
-              type="number"
-              value={
-                (
-                  physicsPandaConfig[key as keyof PhysicsPandaConfig] as {
-                    min: number;
-                  }
-                ).min
-              }
-            />
-            <Input
-              onChange={(e) =>
-                handleRangeConfigChange(
-                  key as keyof PhysicsPandaConfig,
-                  'max',
-                  e.target.value,
-                )
-              }
-              placeholder="Max"
-              size="sm"
-              sx={{width: '70px'}}
-              type="number"
-              value={
-                (
-                  physicsPandaConfig[key as keyof PhysicsPandaConfig] as {
-                    max: number;
-                  }
-                ).max
-              }
-            />
-          </Box>
-        </Box>
-      ))}
     </Box>
   );
 };

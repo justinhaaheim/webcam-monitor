@@ -6,6 +6,8 @@ import type {
 
 import {create} from 'zustand';
 
+import {DEFAULT_CONTAINER_CONFIG} from './createPhysicsContainer';
+
 interface PhysicsState {
   container: PhysicsContainer | null;
   /** Current container-level config */
@@ -23,11 +25,6 @@ interface PhysicsState {
  * Global store exposing the shared Matter.js physics container.
  * Allows any component to launch new pandas without prop-drilling.
  */
-const DEFAULT_CONTAINER_CONFIG: PhysicsContainerOptions = {
-  gravity: 0.5,
-  showBounds: false,
-};
-
 const usePhysicsStore = create<PhysicsState>((set, get) => ({
   container: null,
   containerConfig: DEFAULT_CONTAINER_CONFIG,

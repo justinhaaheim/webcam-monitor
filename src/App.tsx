@@ -7,6 +7,7 @@ import ContinuityCameraHelpModal from './ContinuityCameraHelpModal';
 import Controls from './Controls';
 import DebugInfo from './DebugInfo';
 import PandaWaveAnimation from './PandaWaveAnimation';
+import {DEFAULT_PANDA_LAUNCH_CONFIG} from './physics/createPhysicsContainer';
 import PhysicsContainerComponent from './physics/PhysicsContainerComponent';
 import usePhysicsStore from './physics/physicsStore';
 
@@ -53,16 +54,6 @@ function App() {
   const updatePhysicsContainerConfig = usePhysicsStore(
     (s) => s.updateContainerConfig,
   );
-
-  const [physicsPandaConfig, setPhysicsPandaConfig] = useState<
-    PandaLaunchConfig & {gravity: number}
-  >({
-    bounceDamping: 0.95,
-    durationOnScreen: {max: 8000, min: 5000},
-    entranceAngle: {max: 320, min: 320},
-    entranceSpeed: {max: 10, min: 10},
-    gravity: 0.01,
-  });
 
   // Helper function to format device data for console.table
   const formatDevicesForTable = useCallback((deviceList: MediaDeviceInfo[]) => {
@@ -578,16 +569,10 @@ function App() {
 
       physicsPandaAutoTriggerTimeoutRef.current = window.setTimeout(() => {
         console.log('🤸 Auto-triggering physics panda! 🎬');
-        const {gravity: _gravity, ...launchConfig} = physicsPandaConfig;
-        launchPanda(launchConfig as PandaLaunchConfig);
+        launchPanda(DEFAULT_PANDA_LAUNCH_CONFIG);
       }, nextInterval);
     },
-    [
-      getInitialPandaInterval,
-      getRandomPhysicsPandaInterval,
-      physicsPandaConfig,
-      launchPanda,
-    ],
+    [getInitialPandaInterval, getRandomPhysicsPandaInterval, launchPanda],
   );
 
   // Initialize panda auto-trigger system
@@ -688,19 +673,7 @@ function App() {
   };
 
   const handlePhysicsPandaTrigger = () => {
-    const {gravity: _gravity, ...launchConfig} = physicsPandaConfig;
-    launchPanda(launchConfig as PandaLaunchConfig);
-  };
-  const handlePhysicsConfigChange = (
-    newConfig: Partial<PandaLaunchConfig & {gravity: number}>,
-  ) => {
-    setPhysicsPandaConfig((prev) => {
-      const updated = {...prev, ...newConfig};
-      if (newConfig.gravity !== undefined) {
-        updatePhysicsContainerConfig({gravity: newConfig.gravity});
-      }
-      return updated;
-    });
+    launchPanda(DEFAULT_PANDA_LAUNCH_CONFIG);
   };
 
   return (
@@ -773,9 +746,7 @@ function App() {
           nextPandaTime={nextPandaTime}
           nextPhysicsPandaTime={nextPhysicsPandaTime}
           onPandaTrigger={handlePandaTrigger}
-          onPhysicsConfigChange={handlePhysicsConfigChange}
           onPhysicsPandaTrigger={handlePhysicsPandaTrigger}
-          physicsPandaConfig={physicsPandaConfig}
           selectedDeviceId={selectedDeviceId}
           stream={stream}
           videoResolution={videoResolution}
