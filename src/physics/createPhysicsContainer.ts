@@ -1,13 +1,4 @@
-import {
-  Bodies,
-  Body,
-  Composite,
-  Engine,
-  Events,
-  Render,
-  Runner,
-  World,
-} from 'matter-js';
+import {Bodies, Body, Engine, Events, Render, Runner, World} from 'matter-js';
 import {type RefObject} from 'react';
 
 import pandaImage from '../assets/pandaWithCape.png';
@@ -145,7 +136,8 @@ export async function createPhysicsContainer(
     engine,
     options: {
       background: 'transparent',
-      hasBounds: true,
+
+      // hasBounds: true,
       // height: window.innerHeight,
       // showAngleIndicator: true,
       // showAxes: true,
@@ -212,7 +204,7 @@ export async function createPhysicsContainer(
     }
 
     // Update render bounds to fit the scene
-    Render.lookAt(render, Composite.allBodies(engine.world));
+    // Render.lookAt(render, Composite.allBodies(engine.world));
   }
 
   function updateWallPositions(

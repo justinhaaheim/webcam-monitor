@@ -14,6 +14,10 @@ function PhysicsContainerComponent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const setContainer = usePhysicsStore((s) => s.setContainer);
   const containerConfig = usePhysicsStore((s) => s.containerConfig);
+  const debugWalls = usePhysicsStore((s) => s.debugWalls);
+
+  const inset = debugWalls ? '80px' : '0px';
+  const border = debugWalls ? '1px solid red' : 'none';
 
   useEffect(() => {
     let isCancelled = false;
@@ -58,12 +62,19 @@ function PhysicsContainerComponent() {
     <div
       ref={containerRef}
       style={{
-        height: '100%',
-        left: '0px',
+        border,
+        bottom: inset,
+
+        boxSizing: 'content-box',
+        // height: '100%',
+        left: inset,
+        // overflow: 'visible',
+
         pointerEvents: 'none',
         position: 'fixed',
-        top: '0px',
-        width: '100%',
+        right: inset,
+        top: inset,
+        // width: '100%',
         zIndex: '2000',
       }}
     />
