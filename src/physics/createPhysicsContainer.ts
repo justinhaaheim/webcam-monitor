@@ -8,6 +8,7 @@ import {
   Runner,
   World,
 } from 'matter-js';
+import {type RefObject} from 'react';
 
 import pandaImage from '../assets/pandaWithCape.png';
 import {DEFAULT_PANDA_CONFIG, DEFAULT_WALL_CONFIG} from './config';
@@ -15,12 +16,11 @@ import usePhysicsStore from './physicsStore';
 
 // Public types -------------------------------------------------------------
 export interface PhysicsContainerOptions {
-  gravity: number;
   /**
-   * Element into which the Matter.js canvas should be mounted.
-   * Defaults to `document.body`.
+   * React ref to the container element where the Matter.js canvas should be mounted.
    */
-  parent?: HTMLElement;
+  containerRef: RefObject<HTMLElement>;
+  gravity: number;
   /** Render Matter.js debug bounding boxes around bodies */
   showBounds?: boolean;
 }
@@ -94,16 +94,16 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 /** Helper to calculate effective canvas dimensions and scale factor */
 function calculateCanvasDimensions(
-  viewportWidth: number,
-  viewportHeight: number,
+  containerWidth: number,
+  containerHeight: number,
 ) {
   // Calculate effective canvas size (minimum dimensions)
-  const effectiveWidth = Math.max(viewportWidth, MIN_CANVAS_WIDTH);
-  const effectiveHeight = Math.max(viewportHeight, MIN_CANVAS_HEIGHT);
+  const effectiveWidth = Math.max(containerWidth, MIN_CANVAS_WIDTH);
+  const effectiveHeight = Math.max(containerHeight, MIN_CANVAS_HEIGHT);
 
-  // Calculate scale factor to fit effective canvas in viewport
-  const scaleX = viewportWidth / effectiveWidth;
-  const scaleY = viewportHeight / effectiveHeight;
+  // Calculate scale factor to fit effective canvas in container
+  const scaleX = containerWidth / effectiveWidth;
+  const scaleY = containerHeight / effectiveHeight;
   const scaleFactor = Math.min(scaleX, scaleY);
 
   return {
@@ -131,27 +131,17 @@ export async function createPhysicsContainer(
   const PANDA_WIDTH =
     (PANDA_HEIGHT / pandaImg.naturalHeight) * pandaImg.naturalWidth;
 
-  const parent = options.parent ?? document.body;
-
-  // Create a container element for the renderer so we control styling easily.
-  const sceneElement = document.createElement('div');
-  Object.assign(sceneElement.style, {
-    height: '100%',
-    left: '0px',
-    pointerEvents: 'none',
-    position: 'fixed',
-    top: '0px',
-    width: '100%',
-    zIndex: '2000',
-  });
-  parent.appendChild(sceneElement);
+  const containerElement = options.containerRef.current;
+  if (!containerElement) {
+    throw new Error('Container element not available');
+  }
 
   // Matter.js setup --------------------------------------------------------
   const engine = Engine.create();
   engine.gravity.y = options.gravity;
 
   const render = Render.create({
-    element: sceneElement,
+    element: containerElement,
     engine,
     options: {
       background: 'transparent',
@@ -172,8 +162,6 @@ export async function createPhysicsContainer(
   const runner = Runner.create();
 
   // Create walls -----------------------------------------------------------
-  // Debug mode: move walls into viewport for visibility and testing
-  const DEBUG_WALL_OFFSET = 200; // px to move walls inward
   const debugWalls = usePhysicsStore.getState().debugWalls;
 
   const wallOptions = {
@@ -184,7 +172,7 @@ export async function createPhysicsContainer(
     isStatic: DEFAULT_WALL_CONFIG.isStatic,
     render: {
       ...DEFAULT_WALL_CONFIG.render,
-      visible: debugWalls, // Make walls visible in debug mode
+      visible: debugWalls, // Make walls visible only in debug mode
     },
     restitution: DEFAULT_WALL_CONFIG.restitution,
   };
@@ -207,36 +195,38 @@ export async function createPhysicsContainer(
   };
 
   // Helper functions for canvas and wall management
-  function updateCanvasSize(viewportWidth: number, viewportHeight: number) {
+  function updateCanvasSize(containerWidth: number, containerHeight: number) {
     const {effectiveWidth, effectiveHeight, scaleFactor} =
-      calculateCanvasDimensions(viewportWidth, viewportHeight);
+      calculateCanvasDimensions(containerWidth, containerHeight);
 
     // Set Matter.js canvas to effective dimensions
     Render.setSize(render, effectiveWidth, effectiveHeight);
 
-    // Apply CSS scaling to fit in viewport
-    Object.assign(sceneElement.style, {
-      transform: `scale(${scaleFactor})`,
-      transformOrigin: 'center center',
-    });
+    // Apply CSS scaling to fit in container
+    if (containerElement) {
+      Object.assign(containerElement.style, {
+        transform: `scale(${scaleFactor})`,
+        transformOrigin: 'center center',
+      });
+    }
 
     // Update render bounds to fit the scene
     Render.lookAt(render, Composite.allBodies(engine.world));
   }
 
-  function updateWallPositions(viewportWidth: number, viewportHeight: number) {
+  function updateWallPositions(
+    containerWidth: number,
+    containerHeight: number,
+  ) {
     const {effectiveWidth, effectiveHeight} = calculateCanvasDimensions(
-      viewportWidth,
-      viewportHeight,
+      containerWidth,
+      containerHeight,
     );
-    const currentDebugWalls = usePhysicsStore.getState().debugWalls;
 
-    // Update floor
+    // Update floor - positioned at bottom edge
     Body.setPosition(walls.floor, {
       x: effectiveWidth / 2,
-      y: currentDebugWalls
-        ? effectiveHeight - DEBUG_WALL_OFFSET + wallThickness / 2
-        : effectiveHeight + wallThickness / 2,
+      y: effectiveHeight + wallThickness / 2,
     });
     Body.scale(
       walls.floor,
@@ -244,11 +234,9 @@ export async function createPhysicsContainer(
       1,
     );
 
-    // Update left wall
+    // Update left wall - positioned at left edge
     Body.setPosition(walls.left, {
-      x: currentDebugWalls
-        ? DEBUG_WALL_OFFSET - wallThickness / 2
-        : -wallThickness / 2,
+      x: -wallThickness / 2,
       y: effectiveHeight / 2,
     });
     Body.scale(
@@ -257,11 +245,9 @@ export async function createPhysicsContainer(
       effectiveHeight / (walls.left.bounds.max.y - walls.left.bounds.min.y),
     );
 
-    // Update right wall
+    // Update right wall - positioned at right edge
     Body.setPosition(walls.right, {
-      x: currentDebugWalls
-        ? effectiveWidth - DEBUG_WALL_OFFSET + wallThickness / 2
-        : effectiveWidth + wallThickness / 2,
+      x: effectiveWidth + wallThickness / 2,
       y: effectiveHeight / 2,
     });
     Body.scale(
@@ -274,16 +260,20 @@ export async function createPhysicsContainer(
   // Initialize walls with proper positions and sizes
   World.add(engine.world, [walls.floor, walls.left, walls.right]);
 
-  // Helper to get current effective dimensions
-  function getCurrentEffectiveDimensions() {
-    const rect = parent.getBoundingClientRect();
-    return calculateCanvasDimensions(rect.width, rect.height);
+  // Helper to get current container dimensions
+  function getCurrentContainerDimensions() {
+    if (!containerElement) {
+      throw new Error('Container element not available');
+    }
+    const rect = containerElement.getBoundingClientRect();
+    return {height: rect.height, width: rect.width};
   }
 
   // Initialize with current dimensions
-  const initialRect = parent.getBoundingClientRect();
-  updateWallPositions(initialRect.width, initialRect.height);
-  updateCanvasSize(initialRect.width, initialRect.height);
+  const {width: initialWidth, height: initialHeight} =
+    getCurrentContainerDimensions();
+  updateWallPositions(initialWidth, initialHeight);
+  updateCanvasSize(initialWidth, initialHeight);
 
   // Panda management -------------------------------------------------------
   let nextId = 1;
@@ -297,12 +287,9 @@ export async function createPhysicsContainer(
         meta.body.collisionFilter.category ===
         COLLISION_CATEGORIES.PANDA_ENTERING
       ) {
-        const {effectiveWidth} = getCurrentEffectiveDimensions();
-        const wallOffset = usePhysicsStore.getState().debugWalls
-          ? DEBUG_WALL_OFFSET
-          : 0;
-        const leftBoundary = wallOffset;
-        const rightBoundary = effectiveWidth - wallOffset;
+        const {width: containerWidth} = getCurrentContainerDimensions();
+        const leftBoundary = 0;
+        const rightBoundary = containerWidth;
 
         // If panda has moved fully inside the boundaries, switch to inside group
         if (
@@ -359,7 +346,8 @@ export async function createPhysicsContainer(
     onComplete: (id: number) => void,
   ): number {
     const id = nextId++;
-    const {effectiveWidth, effectiveHeight} = getCurrentEffectiveDimensions();
+    const {width: containerWidth, height: containerHeight} =
+      getCurrentContainerDimensions();
 
     const {entranceSpeed, entranceAngle, bounceDamping} = config;
     const speed = random(entranceSpeed.min, entranceSpeed.max);
@@ -389,26 +377,24 @@ export async function createPhysicsContainer(
 
     let initialPos: {x: number; y: number};
     if (enterFromLeft) {
-      // From left
+      // From left edge
       initialPos = {
-        x: debugWalls ? DEBUG_WALL_OFFSET - PANDA_WIDTH / 2 : -PANDA_WIDTH / 2,
-        y: random(effectiveHeight * 0.2, effectiveHeight * 0.8),
+        x: -PANDA_WIDTH / 2,
+        y: random(containerHeight * 0.2, containerHeight * 0.8),
       };
       initialVelocity.x = Math.abs(initialVelocity.x);
     } else {
-      // From right
+      // From right edge
       initialPos = {
-        x: debugWalls
-          ? effectiveWidth - DEBUG_WALL_OFFSET + PANDA_WIDTH / 2
-          : effectiveWidth + PANDA_WIDTH / 2,
-        y: random(effectiveHeight * 0.2, effectiveHeight * 0.8),
+        x: containerWidth + PANDA_WIDTH / 2,
+        y: random(containerHeight * 0.2, containerHeight * 0.8),
       };
       initialVelocity.x = -Math.abs(initialVelocity.x);
     }
 
     // For debugging: center the panda in the middle of the screen
-    // initialPos.x = effectiveWidth / 2;
-    // initialPos.y = effectiveHeight / 2;
+    // initialPos.x = containerWidth / 2;
+    // initialPos.y = containerHeight / 2;
     // initialVelocity.x = 10;
     // initialVelocity.y = 0;
 
@@ -478,13 +464,15 @@ export async function createPhysicsContainer(
     // Nothing else yet, but other options could be handled here.
   }
 
-  // ---------------- Handle Window Resize ---------------------------------
-  const resizeObserver = () => {
-    const rect = parent.getBoundingClientRect();
-    updateCanvasSize(rect.width, rect.height);
-    updateWallPositions(rect.width, rect.height);
-  };
-  window.addEventListener('resize', resizeObserver);
+  // ---------------- Handle Container Resize ------------------------------
+  const resizeObserver = new ResizeObserver(() => {
+    const {width, height} = getCurrentContainerDimensions();
+    updateCanvasSize(width, height);
+    updateWallPositions(width, height);
+  });
+  if (containerElement) {
+    resizeObserver.observe(containerElement);
+  }
 
   function unload(): void {
     // Clear all pandas & timers
@@ -506,10 +494,8 @@ export async function createPhysicsContainer(
     render.context = null;
     render.textures = {};
 
-    // Remove scene element
-    sceneElement.remove();
-
-    window.removeEventListener('resize', resizeObserver);
+    // Stop observing container resize
+    resizeObserver.disconnect();
   }
 
   return {
