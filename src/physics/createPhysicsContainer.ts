@@ -176,11 +176,12 @@ export async function createPhysicsContainer(
     const width = window.innerWidth;
     const height = window.innerHeight;
 
-    // Update canvas size manually since Render.setSize might not be available
-    render.canvas.width = width;
-    render.canvas.height = height;
-    render.options.width = width;
-    render.options.height = height;
+    // Use Matter.js built-in methods for proper canvas resizing
+    // These methods exist in Matter.js 0.20.0 but aren't in @types/matter-js 0.19.8
+    Render.setSize(render, width, height);
+
+    // Update render bounds to fit the scene
+    Render.lookAt(render, World.allBodies(engine.world));
   }
 
   function updateWallPositions() {
