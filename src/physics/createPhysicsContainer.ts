@@ -155,37 +155,83 @@ export async function createPhysicsContainer(
   };
   const wallThickness = DEFAULT_WALL_CONFIG.thickness;
 
-  const walls = [
-    // Floor
-    Bodies.rectangle(
-      window.innerWidth / 2,
-      debugWalls
-        ? window.innerHeight - DEBUG_WALL_OFFSET + wallThickness / 2
-        : window.innerHeight + wallThickness / 2,
-      window.innerWidth,
-      wallThickness,
-      {...wallOptions, label: 'floor'},
-    ),
-    // Left wall
-    Bodies.rectangle(
-      debugWalls ? DEBUG_WALL_OFFSET - wallThickness / 2 : -wallThickness / 2,
-      window.innerHeight / 2,
-      wallThickness,
-      window.innerHeight,
-      {...wallOptions, label: 'wall-left'},
-    ),
-    // Right wall
-    Bodies.rectangle(
-      debugWalls
-        ? window.innerWidth - DEBUG_WALL_OFFSET + wallThickness / 2
-        : window.innerWidth + wallThickness / 2,
-      window.innerHeight / 2,
-      wallThickness,
-      window.innerHeight,
-      {...wallOptions, label: 'wall-right'},
-    ),
-  ];
-  World.add(engine.world, walls);
+  // Create walls as object for better organization
+  const walls = {
+    floor: Bodies.rectangle(0, 0, 100, wallThickness, {
+      ...wallOptions,
+      label: 'floor',
+    }),
+    left: Bodies.rectangle(0, 0, wallThickness, 100, {
+      ...wallOptions,
+      label: 'wall-left',
+    }),
+    right: Bodies.rectangle(0, 0, wallThickness, 100, {
+      ...wallOptions,
+      label: 'wall-right',
+    }),
+  };
+
+  // Helper functions for canvas and wall management
+  function updateCanvasSize() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Update canvas size manually since Render.setSize might not be available
+    render.canvas.width = width;
+    render.canvas.height = height;
+    render.options.width = width;
+    render.options.height = height;
+  }
+
+  function updateWallPositions() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const currentDebugWalls = usePhysicsStore.getState().debugWalls;
+
+    // Update floor
+    Body.setPosition(walls.floor, {
+      x: width / 2,
+      y: currentDebugWalls
+        ? height - DEBUG_WALL_OFFSET + wallThickness / 2
+        : height + wallThickness / 2,
+    });
+    Body.scale(
+      walls.floor,
+      width / (walls.floor.bounds.max.x - walls.floor.bounds.min.x),
+      1,
+    );
+
+    // Update left wall
+    Body.setPosition(walls.left, {
+      x: currentDebugWalls
+        ? DEBUG_WALL_OFFSET - wallThickness / 2
+        : -wallThickness / 2,
+      y: height / 2,
+    });
+    Body.scale(
+      walls.left,
+      1,
+      height / (walls.left.bounds.max.y - walls.left.bounds.min.y),
+    );
+
+    // Update right wall
+    Body.setPosition(walls.right, {
+      x: currentDebugWalls
+        ? width - DEBUG_WALL_OFFSET + wallThickness / 2
+        : width + wallThickness / 2,
+      y: height / 2,
+    });
+    Body.scale(
+      walls.right,
+      1,
+      height / (walls.right.bounds.max.y - walls.right.bounds.min.y),
+    );
+  }
+
+  // Initialize walls with proper positions and sizes
+  World.add(engine.world, [walls.floor, walls.left, walls.right]);
+  updateWallPositions();
+  updateCanvasSize();
 
   // Panda management -------------------------------------------------------
   let nextId = 1;
@@ -199,7 +245,9 @@ export async function createPhysicsContainer(
         meta.body.collisionFilter.category ===
         COLLISION_CATEGORIES.PANDA_ENTERING
       ) {
-        const wallOffset = debugWalls ? DEBUG_WALL_OFFSET : 0;
+        const wallOffset = usePhysicsStore.getState().debugWalls
+          ? DEBUG_WALL_OFFSET
+          : 0;
         const leftBoundary = wallOffset;
         const rightBoundary = window.innerWidth - wallOffset;
 
@@ -377,61 +425,10 @@ export async function createPhysicsContainer(
   }
 
   // ---------------- Handle Window Resize ---------------------------------
-  function rebuildWalls() {
-    World.remove(engine.world, walls);
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-    const wallHeight = windowHeight;
-    const newWalls = [
-      // Floor
-      Bodies.rectangle(
-        windowWidth / 2,
-        debugWalls
-          ? windowHeight - DEBUG_WALL_OFFSET + wallThickness / 2
-          : windowHeight + wallThickness / 2,
-        windowWidth,
-        wallThickness,
-        {
-          ...wallOptions,
-          label: 'floor',
-        },
-      ),
-      // Left wall
-      Bodies.rectangle(
-        debugWalls ? DEBUG_WALL_OFFSET - wallThickness / 2 : -wallThickness / 2,
-        windowHeight / 2,
-        wallThickness,
-        wallHeight,
-        {
-          ...wallOptions,
-          label: 'wall-left',
-        },
-      ),
-      // Right wall
-      Bodies.rectangle(
-        debugWalls
-          ? windowWidth - DEBUG_WALL_OFFSET + wallThickness / 2
-          : windowWidth + wallThickness / 2,
-        windowHeight / 2,
-        wallThickness,
-        wallHeight,
-        {
-          ...wallOptions,
-          label: 'wall-right',
-        },
-      ),
-    ];
-    walls.splice(0, walls.length, ...newWalls);
-    World.add(engine.world, newWalls);
-
-    // resize canvas
-    render.canvas.width = windowWidth;
-    render.canvas.height = windowHeight;
-    render.options.width = windowWidth;
-    render.options.height = windowHeight;
-  }
-
-  const resizeObserver = () => rebuildWalls();
+  const resizeObserver = () => {
+    updateCanvasSize();
+    updateWallPositions();
+  };
   window.addEventListener('resize', resizeObserver);
 
   function unload(): void {
@@ -457,9 +454,7 @@ export async function createPhysicsContainer(
     // Remove scene element
     sceneElement.remove();
 
-    if (resizeObserver) {
-      window.removeEventListener('resize', resizeObserver);
-    }
+    window.removeEventListener('resize', resizeObserver);
   }
 
   return {
