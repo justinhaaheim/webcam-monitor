@@ -45,7 +45,7 @@ const usePhysicsStore = create<PhysicsState>((set, get) => ({
   container: null,
   containerConfig: {
     ...DEFAULT_CONTAINER_CONFIG,
-    debugMode: debugWalls, // Use debugWalls for physics debug mode
+    containerRef: null,
   },
   debugMode,
   debugWalls,

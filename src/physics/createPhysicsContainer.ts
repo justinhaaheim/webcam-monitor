@@ -19,7 +19,7 @@ export interface PhysicsContainerOptions {
   /**
    * React ref to the container element where the Matter.js canvas should be mounted.
    */
-  containerRef: RefObject<HTMLElement>;
+  containerRef: RefObject<HTMLElement> | null;
   gravity: number;
   /** Render Matter.js debug bounding boxes around bodies */
   showBounds?: boolean;
@@ -131,7 +131,7 @@ export async function createPhysicsContainer(
   const PANDA_WIDTH =
     (PANDA_HEIGHT / pandaImg.naturalHeight) * pandaImg.naturalWidth;
 
-  const containerElement = options.containerRef.current;
+  const containerElement = options.containerRef?.current;
   if (!containerElement) {
     throw new Error('Container element not available');
   }
@@ -152,7 +152,8 @@ export async function createPhysicsContainer(
       showBounds: options.showBounds ?? false,
       // showCollisions: true,
       // showConvexHulls: true,
-      showDebug: true,
+      // showDebug: usePhysicsStore.getState().debugMode,
+      showDebug: false,
       // width: window.innerWidth,
       wireframeBackground: 'transparent',
       wireframes: options.showBounds ?? false,
@@ -222,6 +223,13 @@ export async function createPhysicsContainer(
       containerWidth,
       containerHeight,
     );
+
+    console.log('🐼 updateWallPositions', {
+      containerHeight,
+      containerWidth,
+      effectiveHeight,
+      effectiveWidth,
+    });
 
     // Update floor - positioned at bottom edge
     Body.setPosition(walls.floor, {
