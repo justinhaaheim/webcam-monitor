@@ -1,4 +1,13 @@
-import {Bodies, Body, Engine, Events, Render, Runner, World} from 'matter-js';
+import {
+  Bodies,
+  Body,
+  Composite,
+  Engine,
+  Events,
+  Render,
+  Runner,
+  World,
+} from 'matter-js';
 
 import pandaImage from '../assets/pandaWithCape.png';
 import {DEFAULT_PANDA_CONFIG, DEFAULT_WALL_CONFIG} from './config';
@@ -181,7 +190,7 @@ export async function createPhysicsContainer(
     Render.setSize(render, width, height);
 
     // Update render bounds to fit the scene
-    Render.lookAt(render, World.allBodies(engine.world));
+    Render.lookAt(render, Composite.allBodies(engine.world));
   }
 
   function updateWallPositions() {
