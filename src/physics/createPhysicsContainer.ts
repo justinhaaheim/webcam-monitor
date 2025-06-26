@@ -379,38 +379,42 @@ export async function createPhysicsContainer(
   // ---------------- Handle Window Resize ---------------------------------
   function rebuildWalls() {
     World.remove(engine.world, walls);
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const wallHeight = windowHeight;
     const newWalls = [
+      // Floor
       Bodies.rectangle(
-        width / 2,
+        windowWidth / 2,
         debugWalls
-          ? height - DEBUG_WALL_OFFSET + wallThickness / 2
-          : height + wallThickness / 2,
-        width,
+          ? windowHeight - DEBUG_WALL_OFFSET + wallThickness / 2
+          : windowHeight + wallThickness / 2,
+        windowWidth,
         wallThickness,
         {
           ...wallOptions,
           label: 'floor',
         },
       ),
+      // Left wall
       Bodies.rectangle(
         debugWalls ? DEBUG_WALL_OFFSET - wallThickness / 2 : -wallThickness / 2,
-        height / 2,
+        windowHeight / 2,
         wallThickness,
-        height,
+        wallHeight,
         {
           ...wallOptions,
           label: 'wall-left',
         },
       ),
+      // Right wall
       Bodies.rectangle(
         debugWalls
-          ? width - DEBUG_WALL_OFFSET + wallThickness / 2
-          : width + wallThickness / 2,
-        height / 2,
+          ? windowWidth - DEBUG_WALL_OFFSET + wallThickness / 2
+          : windowWidth + wallThickness / 2,
+        windowHeight / 2,
         wallThickness,
-        height,
+        wallHeight,
         {
           ...wallOptions,
           label: 'wall-right',
@@ -421,10 +425,10 @@ export async function createPhysicsContainer(
     World.add(engine.world, newWalls);
 
     // resize canvas
-    render.canvas.width = width;
-    render.canvas.height = height;
-    render.options.width = width;
-    render.options.height = height;
+    render.canvas.width = windowWidth;
+    render.canvas.height = windowHeight;
+    render.options.width = windowWidth;
+    render.options.height = windowHeight;
   }
 
   const resizeObserver = () => rebuildWalls();
