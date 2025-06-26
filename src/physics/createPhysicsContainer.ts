@@ -58,6 +58,10 @@ function random(min: number, max: number): number {
   return Math.random() * (max - min) + min;
 }
 
+// Canvas sizing constants
+const MIN_CANVAS_WIDTH = 400;
+const MIN_CANVAS_HEIGHT = 400;
+
 // Collision categories (powers of 2 for bitwise operations)
 const COLLISION_CATEGORIES = {
   PANDA_ENTERING: 0x0002,
@@ -86,6 +90,27 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     };
     img.src = src;
   });
+}
+
+/** Helper to calculate effective canvas dimensions and scale factor */
+function calculateCanvasDimensions(
+  viewportWidth: number,
+  viewportHeight: number,
+) {
+  // Calculate effective canvas size (minimum dimensions)
+  const effectiveWidth = Math.max(viewportWidth, MIN_CANVAS_WIDTH);
+  const effectiveHeight = Math.max(viewportHeight, MIN_CANVAS_HEIGHT);
+
+  // Calculate scale factor to fit effective canvas in viewport
+  const scaleX = viewportWidth / effectiveWidth;
+  const scaleY = viewportHeight / effectiveHeight;
+  const scaleFactor = Math.min(scaleX, scaleY);
+
+  return {
+    effectiveHeight,
+    effectiveWidth,
+    scaleFactor,
+  };
 }
 
 // Internal types -----------------------------------------------------------
@@ -130,14 +155,15 @@ export async function createPhysicsContainer(
     engine,
     options: {
       background: 'transparent',
-      height: window.innerHeight,
+      hasBounds: true,
+      // height: window.innerHeight,
       // showAngleIndicator: true,
       // showAxes: true,
       showBounds: options.showBounds ?? false,
       // showCollisions: true,
       // showConvexHulls: true,
       showDebug: true,
-      width: window.innerWidth,
+      // width: window.innerWidth,
       wireframeBackground: 'transparent',
       wireframes: options.showBounds ?? false,
     },
@@ -181,33 +207,40 @@ export async function createPhysicsContainer(
   };
 
   // Helper functions for canvas and wall management
-  function updateCanvasSize() {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+  function updateCanvasSize(viewportWidth: number, viewportHeight: number) {
+    const {effectiveWidth, effectiveHeight, scaleFactor} =
+      calculateCanvasDimensions(viewportWidth, viewportHeight);
 
-    // Use Matter.js built-in methods for proper canvas resizing
-    // These methods exist in Matter.js 0.20.0 but aren't in @types/matter-js 0.19.8
-    Render.setSize(render, width, height);
+    // Set Matter.js canvas to effective dimensions
+    Render.setSize(render, effectiveWidth, effectiveHeight);
+
+    // Apply CSS scaling to fit in viewport
+    Object.assign(sceneElement.style, {
+      transform: `scale(${scaleFactor})`,
+      transformOrigin: 'center center',
+    });
 
     // Update render bounds to fit the scene
     Render.lookAt(render, Composite.allBodies(engine.world));
   }
 
-  function updateWallPositions() {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+  function updateWallPositions(viewportWidth: number, viewportHeight: number) {
+    const {effectiveWidth, effectiveHeight} = calculateCanvasDimensions(
+      viewportWidth,
+      viewportHeight,
+    );
     const currentDebugWalls = usePhysicsStore.getState().debugWalls;
 
     // Update floor
     Body.setPosition(walls.floor, {
-      x: width / 2,
+      x: effectiveWidth / 2,
       y: currentDebugWalls
-        ? height - DEBUG_WALL_OFFSET + wallThickness / 2
-        : height + wallThickness / 2,
+        ? effectiveHeight - DEBUG_WALL_OFFSET + wallThickness / 2
+        : effectiveHeight + wallThickness / 2,
     });
     Body.scale(
       walls.floor,
-      width / (walls.floor.bounds.max.x - walls.floor.bounds.min.x),
+      effectiveWidth / (walls.floor.bounds.max.x - walls.floor.bounds.min.x),
       1,
     );
 
@@ -216,32 +249,41 @@ export async function createPhysicsContainer(
       x: currentDebugWalls
         ? DEBUG_WALL_OFFSET - wallThickness / 2
         : -wallThickness / 2,
-      y: height / 2,
+      y: effectiveHeight / 2,
     });
     Body.scale(
       walls.left,
       1,
-      height / (walls.left.bounds.max.y - walls.left.bounds.min.y),
+      effectiveHeight / (walls.left.bounds.max.y - walls.left.bounds.min.y),
     );
 
     // Update right wall
     Body.setPosition(walls.right, {
       x: currentDebugWalls
-        ? width - DEBUG_WALL_OFFSET + wallThickness / 2
-        : width + wallThickness / 2,
-      y: height / 2,
+        ? effectiveWidth - DEBUG_WALL_OFFSET + wallThickness / 2
+        : effectiveWidth + wallThickness / 2,
+      y: effectiveHeight / 2,
     });
     Body.scale(
       walls.right,
       1,
-      height / (walls.right.bounds.max.y - walls.right.bounds.min.y),
+      effectiveHeight / (walls.right.bounds.max.y - walls.right.bounds.min.y),
     );
   }
 
   // Initialize walls with proper positions and sizes
   World.add(engine.world, [walls.floor, walls.left, walls.right]);
-  updateWallPositions();
-  updateCanvasSize();
+
+  // Helper to get current effective dimensions
+  function getCurrentEffectiveDimensions() {
+    const rect = parent.getBoundingClientRect();
+    return calculateCanvasDimensions(rect.width, rect.height);
+  }
+
+  // Initialize with current dimensions
+  const initialRect = parent.getBoundingClientRect();
+  updateWallPositions(initialRect.width, initialRect.height);
+  updateCanvasSize(initialRect.width, initialRect.height);
 
   // Panda management -------------------------------------------------------
   let nextId = 1;
@@ -255,11 +297,12 @@ export async function createPhysicsContainer(
         meta.body.collisionFilter.category ===
         COLLISION_CATEGORIES.PANDA_ENTERING
       ) {
+        const {effectiveWidth} = getCurrentEffectiveDimensions();
         const wallOffset = usePhysicsStore.getState().debugWalls
           ? DEBUG_WALL_OFFSET
           : 0;
         const leftBoundary = wallOffset;
-        const rightBoundary = window.innerWidth - wallOffset;
+        const rightBoundary = effectiveWidth - wallOffset;
 
         // If panda has moved fully inside the boundaries, switch to inside group
         if (
@@ -316,6 +359,7 @@ export async function createPhysicsContainer(
     onComplete: (id: number) => void,
   ): number {
     const id = nextId++;
+    const {effectiveWidth, effectiveHeight} = getCurrentEffectiveDimensions();
 
     const {entranceSpeed, entranceAngle, bounceDamping} = config;
     const speed = random(entranceSpeed.min, entranceSpeed.max);
@@ -348,23 +392,23 @@ export async function createPhysicsContainer(
       // From left
       initialPos = {
         x: debugWalls ? DEBUG_WALL_OFFSET - PANDA_WIDTH / 2 : -PANDA_WIDTH / 2,
-        y: random(window.innerHeight * 0.2, window.innerHeight * 0.8),
+        y: random(effectiveHeight * 0.2, effectiveHeight * 0.8),
       };
       initialVelocity.x = Math.abs(initialVelocity.x);
     } else {
       // From right
       initialPos = {
         x: debugWalls
-          ? window.innerWidth - DEBUG_WALL_OFFSET + PANDA_WIDTH / 2
-          : window.innerWidth + PANDA_WIDTH / 2,
-        y: random(window.innerHeight * 0.2, window.innerHeight * 0.8),
+          ? effectiveWidth - DEBUG_WALL_OFFSET + PANDA_WIDTH / 2
+          : effectiveWidth + PANDA_WIDTH / 2,
+        y: random(effectiveHeight * 0.2, effectiveHeight * 0.8),
       };
       initialVelocity.x = -Math.abs(initialVelocity.x);
     }
 
     // For debugging: center the panda in the middle of the screen
-    // initialPos.x = window.innerWidth / 2;
-    // initialPos.y = window.innerHeight / 2;
+    // initialPos.x = effectiveWidth / 2;
+    // initialPos.y = effectiveHeight / 2;
     // initialVelocity.x = 10;
     // initialVelocity.y = 0;
 
@@ -436,8 +480,9 @@ export async function createPhysicsContainer(
 
   // ---------------- Handle Window Resize ---------------------------------
   const resizeObserver = () => {
-    updateCanvasSize();
-    updateWallPositions();
+    const rect = parent.getBoundingClientRect();
+    updateCanvasSize(rect.width, rect.height);
+    updateWallPositions(rect.width, rect.height);
   };
   window.addEventListener('resize', resizeObserver);
 
