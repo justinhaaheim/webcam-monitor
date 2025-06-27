@@ -1,3 +1,5 @@
+import type {Material} from 'three';
+
 import {
   Bodies,
   Body,
@@ -5,11 +7,19 @@ import {
   Events,
   Mouse,
   MouseConstraint,
-  Render,
   Runner,
   World,
 } from 'matter-js';
 import {type RefObject} from 'react';
+import {
+  Mesh,
+  MeshBasicMaterial,
+  OrthographicCamera,
+  PlaneGeometry,
+  Scene,
+  TextureLoader,
+  WebGLRenderer,
+} from 'three';
 
 import pandaImage from '../assets/pandaWithCape.png';
 import {DEFAULT_PANDA_CONFIG, DEFAULT_WALL_CONFIG} from './config';
@@ -122,6 +132,7 @@ function calculateCanvasDimensions(
 interface PandaMeta {
   body: Body;
   exitTimeout: number;
+  mesh: Mesh;
   // id from setTimeout
   onComplete: (id: number) => void;
   phase: 'bouncing' | 'exiting';
@@ -145,32 +156,24 @@ export async function createPhysicsContainer(
   const engine = Engine.create();
   engine.gravity.y = options.gravity;
 
-  const render = Render.create({
-    element: containerElement,
-    engine,
-    options: {
-      background: 'transparent',
+  // Three.js setup ---------------------------------------------------------
+  const scene = new Scene();
+  const threeRenderer = new WebGLRenderer({alpha: true, antialias: true});
+  threeRenderer.setPixelRatio(window.devicePixelRatio);
+  containerElement.appendChild(threeRenderer.domElement);
 
-      // hasBounds: true,
-      // height: window.innerHeight,
-      // showAngleIndicator: true,
-      // showAxes: true,
-      showBounds: options.showBounds ?? false,
-      // showCollisions: true,
-      // showConvexHulls: true,
-      // showDebug: usePhysicsStore.getState().debugMode,
-      showDebug: false,
-      // width: window.innerWidth,
-      wireframeBackground: 'transparent',
-      wireframes: options.showBounds ?? false,
-    },
-  });
+  // Camera will be created once we know initial dimensions
+  let camera: OrthographicCamera | null = null;
+  let currentEffectiveHeight = 0;
+
+  // Load panda texture once
+  const pandaTexture = new TextureLoader().load(pandaImage);
 
   const runner = Runner.create();
 
   // ---------------------------- Mouse control -----------------------------
   // Enable grabbing/throwing of pandas
-  mouse = Mouse.create(render.canvas);
+  mouse = Mouse.create(threeRenderer.domElement);
   mouseConstraint = MouseConstraint.create(engine, {
     // Soft constraint so the body follows the mouse a bit behind (more natural throw)
     constraint: {
@@ -245,8 +248,28 @@ export async function createPhysicsContainer(
     const {effectiveWidth, effectiveHeight, scaleFactor} =
       calculateCanvasDimensions(containerWidth, containerHeight);
 
-    // Set Matter.js canvas to effective dimensions
-    Render.setSize(render, effectiveWidth, effectiveHeight);
+    // Set Three.js renderer size
+    threeRenderer.setSize(effectiveWidth, effectiveHeight);
+
+    // Create or update orthographic camera
+    if (!camera) {
+      camera = new OrthographicCamera(
+        0,
+        effectiveWidth,
+        0,
+        effectiveHeight,
+        -1000,
+        1000,
+      );
+      camera.position.z = 1;
+      scene.add(camera);
+    } else {
+      camera.right = effectiveWidth;
+      camera.bottom = effectiveHeight;
+      camera.updateProjectionMatrix();
+    }
+
+    currentEffectiveHeight = effectiveHeight;
 
     // Apply CSS scaling to fit in container
     if (containerElement) {
@@ -450,22 +473,39 @@ export async function createPhysicsContainer(
     pandas.delete(id);
     clearTimeout(meta.exitTimeout);
     World.remove(engine.world, meta.body);
+    scene.remove(meta.mesh);
+    meta.mesh.geometry.dispose();
+    const materials: Material[] = Array.isArray(meta.mesh.material)
+      ? meta.mesh.material
+      : [meta.mesh.material];
+    materials.forEach((mat) => mat.dispose());
   }
 
   // Update hooks (already handled in the beforeUpdate above) -----------
 
   Events.on(engine, 'afterUpdate', () => {
     pandas.forEach((meta, id) => {
+      // Update mesh to match physics body
+      meta.mesh.position.set(
+        meta.body.position.x,
+        currentEffectiveHeight - meta.body.position.y,
+        0,
+      );
+      meta.mesh.rotation.z = -meta.body.angle;
+
       if (meta.phase === 'exiting' && meta.body.position.y < -PANDA_HEIGHT) {
         // Panda has left the screen
         meta.onComplete(id);
         destroyPanda(id);
       }
     });
+
+    if (camera) {
+      threeRenderer.render(scene, camera);
+    }
   });
 
-  // Start engine / renderer ------------------------------------------------
-  Render.run(render);
+  // Start engine ----------------------------------------------------------
   Runner.run(runner, engine);
 
   // API --------------------------------------------------------------------
@@ -567,14 +607,25 @@ export async function createPhysicsContainer(
 
     World.add(engine.world, pandaBody);
 
-    // const exitTimeout = window.setTimeout(() => {
-    //   const meta = pandas.get(id);
-    //   if (meta) meta.phase = 'exiting';
-    // }, durationOnScreen);
+    // Three.js mesh for this panda
+    const pandaGeometry = new PlaneGeometry(PANDA_WIDTH, PANDA_HEIGHT);
+    const pandaMaterial = new MeshBasicMaterial({
+      map: pandaTexture,
+      transparent: true,
+    });
+    const pandaMesh = new Mesh(pandaGeometry, pandaMaterial);
+    pandaMesh.position.set(
+      initialPos.x,
+      currentEffectiveHeight - initialPos.y,
+      0,
+    );
+    pandaMesh.rotation.z = -pandaBody.angle;
+    scene.add(pandaMesh);
 
     pandas.set(id, {
       body: pandaBody,
       exitTimeout: 0,
+      mesh: pandaMesh,
       onComplete,
       phase: 'bouncing',
     });
@@ -586,10 +637,7 @@ export async function createPhysicsContainer(
     if (partial.gravity !== undefined) {
       engine.gravity.y = partial.gravity;
     }
-    if (partial.showBounds !== undefined) {
-      render.options.showBounds = partial.showBounds;
-    }
-    // Nothing else yet, but other options could be handled here.
+    // showBounds currently not implemented for Three.js renderer
   }
 
   // ---------------- Handle Container Resize ------------------------------
@@ -609,26 +657,10 @@ export async function createPhysicsContainer(
 
     // Stop Matter.js
     Runner.stop(runner);
-    Render.stop(render);
+    threeRenderer.dispose();
+    threeRenderer.domElement.remove();
     World.clear(engine.world, false);
     Engine.clear(engine);
-
-    // Remove canvas
-    render.canvas.remove();
-    // Clean internal refs (optional for GC)
-    // @ts-expect-error accessing private fields for cleanup
-    render.canvas = null;
-    // @ts-expect-error accessing private fields for cleanup
-    render.context = null;
-    render.textures = {};
-
-    // Stop observing container resize
-    resizeObserver.disconnect();
-
-    // Remove mouse control
-    if (mouseConstraint) {
-      World.remove(engine.world, mouseConstraint);
-    }
 
     // Remove keyboard event listeners
     document.removeEventListener('keydown', handleKeyDown);
@@ -638,6 +670,9 @@ export async function createPhysicsContainer(
     if (containerElement) {
       containerElement.style.cursor = '';
     }
+
+    // Stop observing container resize
+    resizeObserver.disconnect();
   }
 
   return {
