@@ -4,12 +4,15 @@ import CompareArrowsOutlined from '@mui/icons-material/CompareArrowsOutlined';
 import FullscreenExitOutlined from '@mui/icons-material/FullscreenExitOutlined';
 import FullscreenOutlined from '@mui/icons-material/FullscreenOutlined';
 import HelpOutlineOutlined from '@mui/icons-material/HelpOutlineOutlined';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
 import FormControl from '@mui/joy/FormControl';
 import Option from '@mui/joy/Option';
 import Select from '@mui/joy/Select';
 import React from 'react';
+
+import ColorSchemeToggle from './ColorSchemeToggle';
 
 interface ControlsProps {
   devices: MediaDeviceInfo[];
@@ -23,6 +26,7 @@ interface ControlsProps {
   onFillModeToggle: () => void;
   onFlipToggle: () => void;
   onFullscreen: () => void;
+  onPhysicsPandaTrigger: () => void;
   selectedDeviceId: string | undefined;
   showDebugInfo: boolean;
 }
@@ -40,6 +44,7 @@ const Controls: React.FC<ControlsProps> = ({
   isVisible,
   onDebugToggle,
   onContinuityCameraHelpOpen,
+  onPhysicsPandaTrigger,
 }) => {
   // Always render but control visibility with CSS for smooth animations
   // if (!isVisible) {
@@ -86,7 +91,6 @@ const Controls: React.FC<ControlsProps> = ({
         transition:
           'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         visibility: isVisible ? 'visible' : 'hidden',
-        zIndex: 10,
       }}>
       <FormControl size="sm" sx={{minWidth: 180}}>
         <Select
@@ -134,7 +138,7 @@ const Controls: React.FC<ControlsProps> = ({
             }}
             value={HELP_OPTION_VALUE}>
             <Box sx={{alignItems: 'center', display: 'flex', gap: 1}}>
-              <HelpOutlineOutlined fontSize="small" />
+              <HelpOutlineOutlined />
               Looking for your iPhone continuity camera?
             </Box>
           </Option>
@@ -168,14 +172,25 @@ const Controls: React.FC<ControlsProps> = ({
         {isFullScreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
       </Button>
 
-      <Button
-        color="neutral"
-        onClick={onDebugToggle}
-        sx={{...iconButtonStyles, marginLeft: 'auto'}}
-        title="Toggle Debug Information"
-        variant="soft">
-        <BugReportOutlined />
-      </Button>
+      <Box sx={{alignItems: 'center', display: 'flex', gap: 2}}>
+        <Button
+          color="neutral"
+          onClick={onPhysicsPandaTrigger}
+          sx={iconButtonStyles}
+          title="Trigger Physics Panda"
+          variant="soft">
+          <RocketLaunchIcon />
+        </Button>
+        <Button
+          color="neutral"
+          onClick={onDebugToggle}
+          sx={iconButtonStyles}
+          title="Toggle Debug Information"
+          variant="soft">
+          <BugReportOutlined />
+        </Button>
+        <ColorSchemeToggle />
+      </Box>
     </Box>
   );
 };
