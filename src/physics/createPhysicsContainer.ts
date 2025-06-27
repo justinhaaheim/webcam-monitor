@@ -14,9 +14,11 @@ import {type RefObject} from 'react';
 import {
   Mesh,
   MeshBasicMaterial,
+  NoToneMapping,
   OrthographicCamera,
   PlaneGeometry,
   Scene,
+  SRGBColorSpace,
   TextureLoader,
   WebGLRenderer,
 } from 'three';
@@ -158,7 +160,13 @@ export async function createPhysicsContainer(
 
   // Three.js setup ---------------------------------------------------------
   const scene = new Scene();
-  const threeRenderer = new WebGLRenderer({alpha: true, antialias: true});
+  const threeRenderer = new WebGLRenderer({
+    alpha: true,
+    antialias: true,
+    premultipliedAlpha: false,
+  });
+  threeRenderer.outputColorSpace = SRGBColorSpace;
+  threeRenderer.toneMapping = NoToneMapping;
   threeRenderer.setPixelRatio(window.devicePixelRatio);
   containerElement.appendChild(threeRenderer.domElement);
 
@@ -168,6 +176,7 @@ export async function createPhysicsContainer(
 
   // Load panda texture once
   const pandaTexture = new TextureLoader().load(pandaImage);
+  pandaTexture.colorSpace = SRGBColorSpace;
 
   const runner = Runner.create();
 
