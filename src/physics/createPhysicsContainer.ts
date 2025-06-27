@@ -264,8 +264,8 @@ export async function createPhysicsContainer(
       camera = new OrthographicCamera(
         /* left */ 0,
         /* right */ effectiveWidth,
-        /* top */ 0,
-        /* bottom */ effectiveHeight,
+        /* top */ effectiveHeight,
+        /* bottom */ 0,
         /* near */ 0.1,
         /* far */ 1000,
       );
@@ -273,8 +273,8 @@ export async function createPhysicsContainer(
       scene.add(camera);
     } else {
       camera.right = effectiveWidth;
-      camera.top = 0;
-      camera.bottom = effectiveHeight;
+      camera.top = effectiveHeight;
+      camera.bottom = 0;
       camera.updateProjectionMatrix();
     }
 
