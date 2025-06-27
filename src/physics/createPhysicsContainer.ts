@@ -184,17 +184,9 @@ export async function createPhysicsContainer(
   World.add(engine.world, mouseConstraint);
 
   // ---------------------------- Drag handling -----------------------------
-  // Store original inertia values so we can restore them on release
-  const rotationLocks = new Map<number, number>();
-
   Events.on(mouseConstraint, 'startdrag', (event) => {
     const body = (event as unknown as {body?: Body}).body;
     if (body && body.label === 'panda') {
-      // Remember original inertia and lock rotation
-      rotationLocks.set(body.id, body.inertia);
-      Body.setAngularVelocity(body, 0);
-
-      Body.setInertia(body, Infinity);
       if (containerElement) {
         containerElement.style.cursor = 'grabbing';
       }
@@ -204,11 +196,6 @@ export async function createPhysicsContainer(
   Events.on(mouseConstraint, 'enddrag', (event) => {
     const body = (event as unknown as {body?: Body}).body;
     if (body && body.label === 'panda') {
-      const original = rotationLocks.get(body.id);
-      if (original !== undefined) {
-        Body.setInertia(body, original);
-        rotationLocks.delete(body.id);
-      }
       if (containerElement) {
         containerElement.style.cursor = 'grab';
       }
@@ -388,9 +375,10 @@ export async function createPhysicsContainer(
         });
       }
 
-      // Prevent rotation while grabbed by mouse
+      // Dampen rotation while grabbed by mouse to bring it gradually to rest
       if (mouseConstraint?.body === meta.body) {
-        Body.setAngularVelocity(meta.body, 0);
+        const damping = 0.9; // 0 => snap stop, 1 => no damping
+        Body.setAngularVelocity(meta.body, meta.body.angularVelocity * damping);
       }
     });
   });
