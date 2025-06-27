@@ -341,6 +341,66 @@ export async function createPhysicsContainer(
   let nextId = 1;
   const pandas = new Map<number, PandaMeta>();
 
+  // ---------------------------- Keyboard control -------------------------
+  function freezePandas() {
+    console.log('🐼 Freezing all pandas');
+
+    // Pause the runner to stop physics simulation
+    // runner.enabled = false;
+
+    // Store current velocities and freeze each panda
+    pandas.forEach((meta) => {
+      // frozenPandaStates.set(id, {
+      //   angularVelocity: meta.body.angularVelocity,
+      //   velocity: {...meta.body.velocity},
+      // });
+
+      // Stop all movement
+      // Body.setVelocity(meta.body, {x: 0, y: 0});
+      // Body.setAngularVelocity(meta.body, 0);
+      Body.setStatic(meta.body, true);
+    });
+  }
+
+  function unfreezePandas() {
+    console.log('🐼 Unfreezing all pandas');
+
+    // Resume the runner
+    // runner.enabled = true;
+
+    // Restore velocities and unfreeze each panda
+    pandas.forEach((meta) => {
+      Body.setStatic(meta.body, false);
+      // const frozenState = frozenPandaStates.get(id);
+      // if (frozenState) {
+      //   Body.setStatic(meta.body, false);
+      //   Body.setVelocity(meta.body, frozenState.velocity);
+      //   Body.setAngularVelocity(meta.body, frozenState.angularVelocity);
+      // }
+    });
+
+    // Clear stored states
+    // frozenPandaStates.clear();
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.code === 'Space' && !event.repeat) {
+      event.preventDefault();
+      freezePandas();
+    }
+  }
+
+  function handleKeyUp(event: KeyboardEvent) {
+    if (event.code === 'Space') {
+      event.preventDefault();
+      unfreezePandas();
+    }
+  }
+
+  // Add keyboard event listeners
+  document.addEventListener('keydown', handleKeyDown);
+  document.addEventListener('keyup', handleKeyUp);
+
   // Update pandas collision group when they enter the main area
   Events.on(engine, 'beforeUpdate', () => {
     pandas.forEach((meta) => {
@@ -569,6 +629,10 @@ export async function createPhysicsContainer(
     if (mouseConstraint) {
       World.remove(engine.world, mouseConstraint);
     }
+
+    // Remove keyboard event listeners
+    document.removeEventListener('keydown', handleKeyDown);
+    document.removeEventListener('keyup', handleKeyUp);
 
     // Reset cursor style
     if (containerElement) {
