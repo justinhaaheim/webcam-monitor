@@ -142,7 +142,7 @@ const DebugInfo: React.FC<DebugInfoProps> = ({
         right: '20px',
         top: '20px',
         transition: 'opacity 0.3s ease-in-out, visibility 0.3s ease-in-out',
-        zIndex: 20,
+        // zIndex: 20,
       }}>
       <Typography
         level="title-md"

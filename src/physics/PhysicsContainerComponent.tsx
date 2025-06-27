@@ -66,16 +66,15 @@ function PhysicsContainerComponent() {
         bottom: inset,
 
         boxSizing: 'content-box',
+
+        // overflow: 'visible',
+        // cursor: 'pointer',
+
         // height: '100%',
         left: inset,
-        // overflow: 'visible',
-
-        pointerEvents: 'none',
         position: 'fixed',
         right: inset,
         top: inset,
-        // width: '100%',
-        zIndex: '2000',
       }}
     />
   );

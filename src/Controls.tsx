@@ -91,7 +91,6 @@ const Controls: React.FC<ControlsProps> = ({
         transition:
           'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         visibility: isVisible ? 'visible' : 'hidden',
-        zIndex: 10,
       }}>
       <FormControl size="sm" sx={{minWidth: 180}}>
         <Select

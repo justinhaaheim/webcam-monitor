@@ -717,10 +717,12 @@ function App() {
             position: 'absolute',
             top: 0,
             width: '100%',
-            zIndex: 10, // Above video but below controls
+            // zIndex: 10, // Above video but below controls
           }}
         />
       )}
+
+      <PhysicsContainerComponent />
 
       {error && !stream && (
         <Box
@@ -733,7 +735,7 @@ function App() {
             position: 'absolute',
             top: '10px',
             transform: 'translateX(-50%)',
-            zIndex: 100,
+            // zIndex: 100,
           }}>
           {error}
         </Box>
@@ -779,9 +781,6 @@ function App() {
         isTriggered={isPandaAnimationTriggered}
         onAnimationComplete={handlePandaAnimationComplete}
       />
-
-      {/* Physics container mount (renders nothing) */}
-      <PhysicsContainerComponent />
     </Box>
   );
 }

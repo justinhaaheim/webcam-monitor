@@ -1,4 +1,14 @@
-import {Bodies, Body, Engine, Events, Render, Runner, World} from 'matter-js';
+import {
+  Bodies,
+  Body,
+  Engine,
+  Events,
+  Mouse,
+  MouseConstraint,
+  Render,
+  Runner,
+  World,
+} from 'matter-js';
 import {type RefObject} from 'react';
 
 import pandaImage from '../assets/pandaWithCape.png';
@@ -59,6 +69,10 @@ const COLLISION_CATEGORIES = {
   PANDA_INSIDE: 0x0004,
   WALL: 0x0001,
 } as const;
+
+// Will hold the mouse instance so we can update its pixelRatio on resize
+let mouse: Mouse | null = null;
+let mouseConstraint: MouseConstraint | null = null;
 
 /** Degrees to radians */
 function degToRad(deg: number): number {
@@ -154,6 +168,20 @@ export async function createPhysicsContainer(
 
   const runner = Runner.create();
 
+  // ---------------------------- Mouse control -----------------------------
+  // Enable grabbing/throwing of pandas
+  mouse = Mouse.create(render.canvas);
+  mouseConstraint = MouseConstraint.create(engine, {
+    // Soft constraint so the body follows the mouse a bit behind (more natural throw)
+    constraint: {
+      render: {visible: false},
+      stiffness: 0.3,
+    },
+
+    mouse,
+  });
+  World.add(engine.world, mouseConstraint);
+
   // Create walls -----------------------------------------------------------
   const debugWalls = usePhysicsStore.getState().debugWalls;
 
@@ -205,6 +233,11 @@ export async function createPhysicsContainer(
 
     // Update render bounds to fit the scene
     // Render.lookAt(render, Composite.allBodies(engine.world));
+
+    // Adjust mouse pixel ratio to account for CSS scaling so dragging is accurate
+    if (mouse) {
+      mouse.pixelRatio = 1 / scaleFactor;
+    }
   }
 
   function updateWallPositions(
@@ -369,10 +402,10 @@ export async function createPhysicsContainer(
     const enterFromLeft = Math.random() > 0.5;
     // const enterFromLeft = true;
 
-    const durationOnScreen = random(
-      config.durationOnScreen.min,
-      config.durationOnScreen.max,
-    );
+    // const durationOnScreen = random(
+    //   config.durationOnScreen.min,
+    //   config.durationOnScreen.max,
+    // );
 
     const initialVelocity = {
       x: Math.cos(angleRad) * speed,
@@ -443,14 +476,14 @@ export async function createPhysicsContainer(
 
     World.add(engine.world, pandaBody);
 
-    const exitTimeout = window.setTimeout(() => {
-      const meta = pandas.get(id);
-      if (meta) meta.phase = 'exiting';
-    }, durationOnScreen);
+    // const exitTimeout = window.setTimeout(() => {
+    //   const meta = pandas.get(id);
+    //   if (meta) meta.phase = 'exiting';
+    // }, durationOnScreen);
 
     pandas.set(id, {
       body: pandaBody,
-      exitTimeout,
+      exitTimeout: 0,
       onComplete,
       phase: 'bouncing',
     });
@@ -500,6 +533,11 @@ export async function createPhysicsContainer(
 
     // Stop observing container resize
     resizeObserver.disconnect();
+
+    // Remove mouse control
+    if (mouseConstraint) {
+      World.remove(engine.world, mouseConstraint);
+    }
   }
 
   return {
