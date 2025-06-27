@@ -234,26 +234,30 @@ export async function createPhysicsContainer(
       1,
     );
 
+    // Make walls "infinitely" tall - extend well beyond the visible area
+    const wallHeight = effectiveHeight * 10; // 10x taller than canvas
+    const wallCenterY = effectiveHeight / 2 - wallHeight / 2 + effectiveHeight; // Position so they extend from well above to well below
+
     // Update left wall - positioned at left edge
     Body.setPosition(walls.left, {
       x: -wallThickness / 2,
-      y: effectiveHeight / 2,
+      y: wallCenterY,
     });
     Body.scale(
       walls.left,
       1,
-      effectiveHeight / (walls.left.bounds.max.y - walls.left.bounds.min.y),
+      wallHeight / (walls.left.bounds.max.y - walls.left.bounds.min.y),
     );
 
     // Update right wall - positioned at right edge
     Body.setPosition(walls.right, {
       x: effectiveWidth + wallThickness / 2,
-      y: effectiveHeight / 2,
+      y: wallCenterY,
     });
     Body.scale(
       walls.right,
       1,
-      effectiveHeight / (walls.right.bounds.max.y - walls.right.bounds.min.y),
+      wallHeight / (walls.right.bounds.max.y - walls.right.bounds.min.y),
     );
   }
 
