@@ -254,18 +254,19 @@ export async function createPhysicsContainer(
     // Create or update orthographic camera
     if (!camera) {
       camera = new OrthographicCamera(
-        0,
-        effectiveWidth,
-        0,
-        effectiveHeight,
-        -1000,
-        1000,
+        /* left */ 0,
+        /* right */ effectiveWidth,
+        /* top */ effectiveHeight,
+        /* bottom */ 0,
+        /* near */ 0.1,
+        /* far */ 1000,
       );
       camera.position.z = 1;
       scene.add(camera);
     } else {
       camera.right = effectiveWidth;
-      camera.bottom = effectiveHeight;
+      camera.top = effectiveHeight;
+      camera.bottom = 0;
       camera.updateProjectionMatrix();
     }
 
