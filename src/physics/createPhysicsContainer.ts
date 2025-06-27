@@ -174,6 +174,7 @@ export async function createPhysicsContainer(
   mouseConstraint = MouseConstraint.create(engine, {
     // Soft constraint so the body follows the mouse a bit behind (more natural throw)
     constraint: {
+      // damping: 0.1,
       render: {visible: false},
       stiffness: 0.3,
     },
@@ -181,6 +182,43 @@ export async function createPhysicsContainer(
     mouse,
   });
   World.add(engine.world, mouseConstraint);
+
+  // ---------------------------- Drag handling -----------------------------
+  // Store original inertia values so we can restore them on release
+  const rotationLocks = new Map<number, number>();
+
+  Events.on(mouseConstraint, 'startdrag', (event) => {
+    const body = (event as unknown as {body?: Body}).body;
+    if (body && body.label === 'panda') {
+      // Remember original inertia and lock rotation
+      rotationLocks.set(body.id, body.inertia);
+      Body.setAngularVelocity(body, 0);
+
+      Body.setInertia(body, Infinity);
+      if (containerElement) {
+        containerElement.style.cursor = 'grabbing';
+      }
+    }
+  });
+
+  Events.on(mouseConstraint, 'enddrag', (event) => {
+    const body = (event as unknown as {body?: Body}).body;
+    if (body && body.label === 'panda') {
+      const original = rotationLocks.get(body.id);
+      if (original !== undefined) {
+        Body.setInertia(body, original);
+        rotationLocks.delete(body.id);
+      }
+      if (containerElement) {
+        containerElement.style.cursor = 'grab';
+      }
+    }
+  });
+
+  // Set default cursor
+  if (containerElement) {
+    containerElement.style.cursor = 'grab';
+  }
 
   // Create walls -----------------------------------------------------------
   const debugWalls = usePhysicsStore.getState().debugWalls;
@@ -348,6 +386,11 @@ export async function createPhysicsContainer(
           x: 0,
           y: -engine.world.gravity.y * meta.body.mass * 1.5,
         });
+      }
+
+      // Prevent rotation while grabbed by mouse
+      if (mouseConstraint?.body === meta.body) {
+        Body.setAngularVelocity(meta.body, 0);
       }
     });
   });
@@ -537,6 +580,11 @@ export async function createPhysicsContainer(
     // Remove mouse control
     if (mouseConstraint) {
       World.remove(engine.world, mouseConstraint);
+    }
+
+    // Reset cursor style
+    if (containerElement) {
+      containerElement.style.cursor = '';
     }
   }
 
