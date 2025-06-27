@@ -172,7 +172,6 @@ export async function createPhysicsContainer(
 
   // Camera will be created once we know initial dimensions
   let camera: OrthographicCamera | null = null;
-  let currentEffectiveHeight = 0;
 
   // Load panda texture once
   const pandaTexture = new TextureLoader().load(pandaImage);
@@ -265,8 +264,8 @@ export async function createPhysicsContainer(
       camera = new OrthographicCamera(
         /* left */ 0,
         /* right */ effectiveWidth,
-        /* top */ effectiveHeight,
-        /* bottom */ 0,
+        /* top */ 0,
+        /* bottom */ effectiveHeight,
         /* near */ 0.1,
         /* far */ 1000,
       );
@@ -274,12 +273,10 @@ export async function createPhysicsContainer(
       scene.add(camera);
     } else {
       camera.right = effectiveWidth;
-      camera.top = effectiveHeight;
-      camera.bottom = 0;
+      camera.top = 0;
+      camera.bottom = effectiveHeight;
       camera.updateProjectionMatrix();
     }
-
-    currentEffectiveHeight = effectiveHeight;
 
     // Apply CSS scaling to fit in container
     if (containerElement) {
@@ -288,9 +285,6 @@ export async function createPhysicsContainer(
         transformOrigin: 'center center',
       });
     }
-
-    // Update render bounds to fit the scene
-    // Render.lookAt(render, Composite.allBodies(engine.world));
 
     // Adjust mouse pixel ratio to account for CSS scaling so dragging is accurate
     if (mouse) {
@@ -496,11 +490,7 @@ export async function createPhysicsContainer(
   Events.on(engine, 'afterUpdate', () => {
     pandas.forEach((meta, id) => {
       // Update mesh to match physics body
-      meta.mesh.position.set(
-        meta.body.position.x,
-        currentEffectiveHeight - meta.body.position.y,
-        0,
-      );
+      meta.mesh.position.set(meta.body.position.x, meta.body.position.y, 0);
       meta.mesh.rotation.z = -meta.body.angle;
 
       if (meta.phase === 'exiting' && meta.body.position.y < -PANDA_HEIGHT) {
@@ -624,11 +614,7 @@ export async function createPhysicsContainer(
       transparent: true,
     });
     const pandaMesh = new Mesh(pandaGeometry, pandaMaterial);
-    pandaMesh.position.set(
-      initialPos.x,
-      currentEffectiveHeight - initialPos.y,
-      0,
-    );
+    pandaMesh.position.set(initialPos.x, initialPos.y, 0);
     pandaMesh.rotation.z = -pandaBody.angle;
     scene.add(pandaMesh);
 
