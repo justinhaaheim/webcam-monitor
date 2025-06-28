@@ -172,6 +172,7 @@ export async function createPhysicsContainer(
 
   // Camera will be created once we know initial dimensions
   let camera: OrthographicCamera | null = null;
+  let currentEffectiveHeight = 0;
 
   // Load panda texture once
   const pandaTexture = new TextureLoader().load(pandaImage);
@@ -271,11 +272,13 @@ export async function createPhysicsContainer(
       );
       camera.position.z = 1;
       scene.add(camera);
+      currentEffectiveHeight = effectiveHeight;
     } else {
       camera.right = effectiveWidth;
       camera.top = effectiveHeight;
       camera.bottom = 0;
       camera.updateProjectionMatrix();
+      currentEffectiveHeight = effectiveHeight;
     }
 
     // Apply CSS scaling to fit in container
@@ -490,7 +493,11 @@ export async function createPhysicsContainer(
   Events.on(engine, 'afterUpdate', () => {
     pandas.forEach((meta, id) => {
       // Update mesh to match physics body
-      meta.mesh.position.set(meta.body.position.x, meta.body.position.y, 0);
+      meta.mesh.position.set(
+        meta.body.position.x,
+        currentEffectiveHeight - meta.body.position.y,
+        0,
+      );
       meta.mesh.rotation.z = -meta.body.angle;
 
       if (meta.phase === 'exiting' && meta.body.position.y < -PANDA_HEIGHT) {
@@ -614,7 +621,11 @@ export async function createPhysicsContainer(
       transparent: true,
     });
     const pandaMesh = new Mesh(pandaGeometry, pandaMaterial);
-    pandaMesh.position.set(initialPos.x, initialPos.y, 0);
+    pandaMesh.position.set(
+      initialPos.x,
+      currentEffectiveHeight - initialPos.y,
+      0,
+    );
     pandaMesh.rotation.z = -pandaBody.angle;
     scene.add(pandaMesh);
 
