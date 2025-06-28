@@ -12,6 +12,9 @@ import {
 } from 'matter-js';
 import {type RefObject} from 'react';
 import {
+  AxesHelper,
+  Color,
+  DoubleSide,
   Mesh,
   MeshBasicMaterial,
   NoToneMapping,
@@ -160,6 +163,9 @@ export async function createPhysicsContainer(
 
   // Three.js setup ---------------------------------------------------------
   const scene = new Scene();
+  scene.background = new Color('skyblue');
+  const axesHelper = new AxesHelper(500);
+  scene.add(axesHelper);
   const threeRenderer = new WebGLRenderer({
     alpha: true,
     antialias: true,
@@ -271,6 +277,13 @@ export async function createPhysicsContainer(
       );
       camera.position.z = 1;
       scene.add(camera);
+      console.log('🎥 Camera created:', {
+        bottom: camera.bottom,
+        left: camera.left,
+        position: camera.position,
+        right: camera.right,
+        top: camera.top,
+      });
     } else {
       camera.right = effectiveWidth;
       camera.top = 0;
@@ -570,6 +583,8 @@ export async function createPhysicsContainer(
       angleDeg,
       angleRad,
       bounceDamping,
+      containerHeight,
+      containerWidth,
       durationOnScreen: config.durationOnScreen,
       entranceAngle: config.entranceAngle,
       entranceSpeed: config.entranceSpeed,
@@ -611,12 +626,20 @@ export async function createPhysicsContainer(
     const pandaGeometry = new PlaneGeometry(PANDA_WIDTH, PANDA_HEIGHT);
     const pandaMaterial = new MeshBasicMaterial({
       map: pandaTexture,
+      side: DoubleSide,
       transparent: true,
     });
     const pandaMesh = new Mesh(pandaGeometry, pandaMaterial);
     pandaMesh.position.set(initialPos.x, initialPos.y, 0);
     pandaMesh.rotation.z = -pandaBody.angle;
     scene.add(pandaMesh);
+
+    console.log('🐼 Panda mesh added to scene:', {
+      bodyPosition: pandaBody.position,
+      id,
+      meshPosition: pandaMesh.position,
+      sceneChildren: scene.children.length,
+    });
 
     pandas.set(id, {
       body: pandaBody,
