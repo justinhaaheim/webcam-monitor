@@ -5,8 +5,13 @@ import ContinuityCameraHelpModal from './ContinuityCameraHelpModal';
 import Controls from './Controls';
 import DebugInfo from './DebugInfo';
 import PandaWaveAnimation from './PandaWaveAnimation';
+import {DEFAULT_PANDA_LAUNCH_CONFIG} from './physics/config';
+import PhysicsContainerComponent from './physics/PhysicsContainerComponent';
+import usePhysicsStore from './physics/physicsStore';
 
 // Removed import './App.css';
+
+// Debug mode is now handled in the physics store
 
 function App() {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
@@ -29,7 +34,12 @@ function App() {
   const [isPandaAnimationTriggered, setIsPandaAnimationTriggered] =
     useState<boolean>(false);
   const [nextPandaTime, setNextPandaTime] = useState<number | null>(null);
+  const [nextPhysicsPandaTime, setNextPhysicsPandaTime] = useState<
+    number | null
+  >(null);
+
   const pandaAutoTriggerTimeoutRef = useRef<number | null>(null);
+  const physicsPandaAutoTriggerTimeoutRef = useRef<number | null>(null);
   const controlsTimeoutRef = useRef<number | null>(null);
   const appContainerRef = useRef<HTMLDivElement>(null); // Ref for the main container
   const initialStreamAcquiredRef = useRef<boolean>(false); // Track if we've already initialized a stream
@@ -40,6 +50,12 @@ function App() {
 
   // Central function to update stream based on a device ID
   const streamRef = useRef<MediaStream | null>(null);
+
+  const launchPanda = usePhysicsStore((s) => s.launchPanda);
+  const _updatePhysicsContainerConfig = usePhysicsStore(
+    (s) => s.updateContainerConfig,
+  );
+  const isDebugMode = usePhysicsStore((s) => s.debugMode);
 
   // Helper function to format device data for console.table
   const formatDevicesForTable = useCallback((deviceList: MediaDeviceInfo[]) => {
@@ -491,6 +507,15 @@ function App() {
     return randomMinutes * 60 * 1000; // Convert to milliseconds
   }, []);
 
+  // Exactly the same logic, but for the physics panda, so we can have separate timers
+  const getRandomPhysicsPandaInterval = useCallback(() => {
+    const minMinutes = 5;
+    const maxMinutes = 20;
+    const randomMinutes =
+      Math.random() * (maxMinutes - minMinutes) + minMinutes;
+    return randomMinutes * 60 * 1000;
+  }, []);
+
   // Generate initial interval including 5-minute startup delay
   const getInitialPandaInterval = useCallback(() => {
     const startupDelay = 5 * 60 * 1000; // 5 minutes
@@ -526,6 +551,32 @@ function App() {
     [getRandomPandaInterval, getInitialPandaInterval],
   );
 
+  // Schedule the next physics panda auto-trigger
+  const scheduleNextPhysicsPandaAutoTrigger = useCallback(
+    (useInitialDelay = false) => {
+      if (physicsPandaAutoTriggerTimeoutRef.current) {
+        clearTimeout(physicsPandaAutoTriggerTimeoutRef.current);
+      }
+
+      const nextInterval = useInitialDelay
+        ? getInitialPandaInterval()
+        : getRandomPhysicsPandaInterval();
+      const nextVisitTime = Date.now() + nextInterval;
+      const minutesFromNow = (nextInterval / 60000).toFixed(1);
+
+      setNextPhysicsPandaTime(nextVisitTime);
+      console.log(
+        `🤸 Physics panda visit scheduled in ${minutesFromNow} minutes (at ${new Date(nextVisitTime).toLocaleTimeString()})`,
+      );
+
+      physicsPandaAutoTriggerTimeoutRef.current = window.setTimeout(() => {
+        console.log('🤸 Auto-triggering physics panda! 🎬');
+        launchPanda(DEFAULT_PANDA_LAUNCH_CONFIG);
+      }, nextInterval);
+    },
+    [getInitialPandaInterval, getRandomPhysicsPandaInterval, launchPanda],
+  );
+
   // Initialize panda auto-trigger system
   useEffect(() => {
     // Schedule the first visit immediately (includes 5-minute startup delay + random interval)
@@ -541,6 +592,21 @@ function App() {
       }
     };
   }, [scheduleNextPandaAutoTrigger]);
+
+  // Initialize physics panda auto-trigger system
+  useEffect(() => {
+    console.log(
+      '🤸 Physics panda auto-trigger system initialized! Scheduling first visit...',
+    );
+    scheduleNextPhysicsPandaAutoTrigger(true);
+
+    // Cleanup on unmount
+    return () => {
+      if (physicsPandaAutoTriggerTimeoutRef.current) {
+        clearTimeout(physicsPandaAutoTriggerTimeoutRef.current);
+      }
+    };
+  }, [scheduleNextPhysicsPandaAutoTrigger]);
 
   if (error && devices.length === 0) {
     return (
@@ -608,6 +674,10 @@ function App() {
     scheduleNextPandaAutoTrigger(false);
   };
 
+  const handlePhysicsPandaTrigger = () => {
+    launchPanda(DEFAULT_PANDA_LAUNCH_CONFIG);
+  };
+
   return (
     <Box
       ref={appContainerRef} // Added ref for event listeners and fullscreen
@@ -637,6 +707,23 @@ function App() {
         }}
       />
 
+      {/* Debug mode overlay */}
+      {isDebugMode && (
+        <Box
+          sx={{
+            backgroundColor: 'rgba(64, 64, 64, 0.95)', // Dark grey with transparency
+            height: '100%',
+            left: 0,
+            position: 'absolute',
+            top: 0,
+            width: '100%',
+            // zIndex: 10, // Above video but below controls
+          }}
+        />
+      )}
+
+      <PhysicsContainerComponent />
+
       {error && !stream && (
         <Box
           sx={{
@@ -648,7 +735,7 @@ function App() {
             position: 'absolute',
             top: '10px',
             transform: 'translateX(-50%)',
-            zIndex: 100,
+            // zIndex: 100,
           }}>
           {error}
         </Box>
@@ -666,6 +753,7 @@ function App() {
         onFillModeToggle={handleFillModeToggle}
         onFlipToggle={handleFlipToggle}
         onFullscreen={handleFullscreen}
+        onPhysicsPandaTrigger={handlePhysicsPandaTrigger}
         selectedDeviceId={selectedDeviceId}
         showDebugInfo={showDebugInfo}
       />
@@ -675,7 +763,9 @@ function App() {
           fillMode={fillMode}
           isFlipped={isFlipped}
           nextPandaTime={nextPandaTime}
+          nextPhysicsPandaTime={nextPhysicsPandaTime}
           onPandaTrigger={handlePandaTrigger}
+          onPhysicsPandaTrigger={handlePhysicsPandaTrigger}
           selectedDeviceId={selectedDeviceId}
           stream={stream}
           videoResolution={videoResolution}
