@@ -37,7 +37,7 @@
   "devDependencies": {
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react": "^4.7.0",
     "concurrently": "8.2.1",
     "eslint": "9.22.0",
     "eslint-config-jha-react-node": "github:justinhaaheim/eslint-config-jha-react-node",
@@ -45,7 +45,7 @@
     "lint-staged": "^14.0.1",
     "prettier": "3.3.3",
     "typescript": "^5.5.3",
-    "vite": "^5.4.0"
+    "vite": "^8.0.7"
   },
   "overrides": {
     "eslint-plugin-typescript-sort-keys": {
